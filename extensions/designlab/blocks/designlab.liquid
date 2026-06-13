@@ -1,0 +1,24 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+<div 
+  id="design-lab-root" 
+  data-shop-domain="{{ shop.domain }}"
+  class="bg-transparent text-[#181c1f] min-h-screen antialiased"
+>
+  <p style="text-align: center; padding: 40px; font-family: 'Inter', sans-serif;">Loading Design Lab Interface...</p>
+</div>
+
+<script src="{{ 'design-lab-frontend.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Design Lab Interface",
+  "target": "section",
+  "templates": ["collection", "page"]
+}
+{% endschema %}

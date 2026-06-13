@@ -1,0 +1,107 @@
+import { authenticate } from "../shopify.server";
+
+export const loader = async ({ request }) => {
+  try {
+    const { admin } = await authenticate.public.appProxy(request);
+
+    if (!admin) {
+      return new Response(JSON.stringify({ error: "Unauthorized request origin." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Query Shopify Admin GraphQL API - Pulling GLB directly from product photos/media list
+    const response = await admin.graphql(`
+      #graphql
+      query getCustomizableProducts {
+        products(first: 50) {
+          edges {
+            node {
+              id
+              title
+              handle
+              productType
+              featuredImage {
+                url
+              }
+              
+              # 1. Fetch the B2B activation filter flag metafield
+              isB2B: metafield(namespace: "custom", key: "b2b_env_product") {
+                value
+              }
+              
+              # 2. Fetch the canvas canvas dimensions configuration blueprint
+              dieline: metafield(namespace: "custom", key: "dieline_config") {
+                value
+              }
+              
+              # 💡 3. FIX: Scan product media ("content photos") directly for native 3D files!
+              media(first: 10) {
+                nodes {
+                  mediaContentType
+                  ... on Model3d {
+                    sources {
+                      url
+                      format
+                    }
+                  }
+                }
+              }
+
+              # Retained fallback metafield slot just in case you ever need a secondary path
+              glbFile: metafield(namespace: "custom", key: "glb_model") {
+                reference {
+                  ... on GenericFile {
+                    url
+                  }
+                }
+              }
+
+            }
+          }
+        }
+      }
+    `);
+
+    const responseJson = await response.json();
+    const allProducts = responseJson.data?.products?.edges || [];
+
+// Map out and transform data cleanly for your React frontend
+    const customizableProducts = allProducts
+      .map(edge => {
+        const node = edge.node;
+
+        // 💡 Keep the exact nested object properties that your new typescript types expect!
+        return {
+          id: node.id,
+          title: node.title,
+          handle: node.handle,
+          productType: node.productType || "General",
+          image: node.featuredImage?.url || "https://placehold.co/300x300?text=No+Image",
+          
+          // Preserve the raw metafield wrappers so parseDieline() can read them natively
+          isB2B: node.isB2B, 
+          moq: node.isB2B, // maps to your metafield model interface safely
+          dielineConfig: node.dieline,
+          
+          // Preserve the raw media nodes structure so getActiveModelUrl() works perfectly!
+          media: node.media || { nodes: [] }
+        };
+      })
+      // Keep your filter active so only approved assets populate the grid
+      .filter(product => product.isB2B?.value === "true");
+
+    return new Response(JSON.stringify({ products: customizableProducts }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    console.error("❌ App Proxy Critical Loader Error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error", details: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
