@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // 💡 Import your clean, newly migrated modular components
+import { LoadingScreen } from './components/LoadingScreen';
 import { ProductGrid } from './components/ProductGrid';
 import { OverviewPanel } from './components/OverviewPanel';
 import { DesignMode } from './components/DesignMode';
@@ -72,7 +73,13 @@ if ((window as any).tailwind) {
   };
 }
 
-function DesignLabApp() {
+// 💡 Define explicit Type Interfaces for the parsed Liquid Dataset
+interface DesignLabAppProps {
+  shopDomain: string;
+  loadingAnimationUrl: string;
+}
+
+function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
   const [currentView, setCurrentView] = useState<'grid' | 'overview' | 'design'>('grid');
   const [selectedProduct, setSelectedProduct] = useState<B2BProduct | null>(null);
   const [products, setProducts] = useState<B2BProduct[]>([]);
@@ -140,10 +147,15 @@ function DesignLabApp() {
       });
   }, []);
 
+  // 2. Optimized Lottie Loading Screen Loop Execution
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-24 font-sans text-on-surface-variant">
-        <span className="animate-pulse font-medium text-lg">Loading architectural matrices...</span>
+      <div className="w-full h-screen bg-background">
+        {/* 💡 Pass down the parsed safe Shopify CDN URL context */}
+        <LoadingScreen 
+          animationUrl={loadingAnimationUrl} 
+          message="Loading customizer options..." 
+        />
       </div>
     );
   }
@@ -169,7 +181,7 @@ function DesignLabApp() {
           modelUrl={activeModelUrl}
           onBack={() => setCurrentView('grid')}
           onUpload={(e) => {
-            handleTextureUpload(e, currentDieline);
+            handleTextureUpload(e, currentDieline, packageColor);
             setCurrentView('design');
           }}
         />
@@ -188,9 +200,6 @@ function DesignLabApp() {
           textureCanvas={textureCanvasRef.current} 
           modelUrl={activeModelUrl}
           
-          // 💡 FIXED EVENT ROUTING:
-          // Instead of calling a missing hook method, we check if there are images uploaded.
-          // If yes, we force a quick redraw onto the 4K texture pipeline using the native HTML Canvas API directly!
           onBack={() => {
             const canvas = textureCanvasRef.current;
             if (canvas && artworks.length > 0) {
@@ -217,13 +226,13 @@ function DesignLabApp() {
           }}
           
           onSelectArtwork={setSelectedArtworkId}
-          onRemoveArtwork={removeArtwork}
-          onAddArtwork={(e) => handleTextureUpload(e, currentDieline)}
-          onScaleChange={(scale) => handleScaleChange(scale, currentDieline)}
+          onRemoveArtwork={(id) => removeArtwork(id, currentDieline, packageColor)}
+          onAddArtwork={(e) => handleTextureUpload(e, currentDieline, packageColor)}
+          onScaleChange={(scale) => handleScaleChange(scale, currentDieline, packageColor)}
           onColorChange={setPackageColor}
           onSave={() => alert("Saved!")}
           onMouseDown={(e) => handleMouseDown(e, currentDieline, 500)}
-          onMouseMove={(e) => handleMouseMove(e, currentDieline, 500)}
+          onMouseMove={(e) => handleMouseMove(e, currentDieline, 500, packageColor)}
           onMouseUp={handleMouseUp}
           isOutOfBounds={(art) => isOutOfBounds(art, currentDieline)}
         />
@@ -237,6 +246,15 @@ function DesignLabApp() {
 
 const rootElement = document.getElementById('design-lab-root');
 if (rootElement) {
+  // 💡 Safely read dataset variables directly from the Liquid template markup mounting node
+  const shopDomain = rootElement.getAttribute('data-shop-domain') || '';
+  const loadingAnimationUrl = rootElement.getAttribute('data-loading-animation-url') || 'loading-animation.json';
+
   rootElement.innerHTML = ''; 
-  ReactDOM.createRoot(rootElement).render(<DesignLabApp />);
+  ReactDOM.createRoot(rootElement).render(
+    <DesignLabApp 
+      shopDomain={shopDomain} 
+      loadingAnimationUrl={loadingAnimationUrl} 
+    />
+  );
 }

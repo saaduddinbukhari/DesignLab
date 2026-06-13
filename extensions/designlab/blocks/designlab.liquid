@@ -3,11 +3,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" defer="defer"></script>
 
 <div 
   id="design-lab-root" 
   data-shop-domain="{{ shop.domain }}"
+  data-loading-animation-url="{{ 'loading-animation.json' | asset_url }}"
   class="bg-transparent text-[#181c1f] min-h-screen antialiased"
 >
   <p style="text-align: center; padding: 40px; font-family: 'Inter', sans-serif;">Loading Design Lab Interface...</p>

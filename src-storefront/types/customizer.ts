@@ -25,6 +25,7 @@ export interface B2BProduct {
   title: string;
   handle: string;
   productType: string;
+  description?: string;
   b2bEnvProduct?: ShopifyMetafield;
   moq?: ShopifyMetafield;
   dielineConfig?: ShopifyMetafield;
