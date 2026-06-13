@@ -20,6 +20,7 @@ export const loader = async ({ request }) => {
             node {
               id
               title
+              description
               handle
               productType
               featuredImage {
@@ -76,6 +77,7 @@ export const loader = async ({ request }) => {
         return {
           id: node.id,
           title: node.title,
+          description: node.description,
           handle: node.handle,
           productType: node.productType || "General",
           image: node.featuredImage?.url || "https://placehold.co/300x300?text=No+Image",
