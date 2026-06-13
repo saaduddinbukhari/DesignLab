@@ -11,7 +11,7 @@ export const loader = async ({ request }) => {
       });
     }
 
-    // Query Shopify Admin GraphQL API - Pulling GLB directly from product photos/media list
+    // Query Shopify Admin GraphQL API
     const response = await admin.graphql(`
       #graphql
       query getCustomizableProducts {
@@ -37,7 +37,12 @@ export const loader = async ({ request }) => {
                 value
               }
               
-              # 💡 3. FIX: Scan product media ("content photos") directly for native 3D files!
+              # 💡 FIX: Fetch the actual Minimum Order Quantity integer value!
+              moqConfig: metafield(namespace: "custom", key: "minimum_order_quantity") {
+                value
+              }
+              
+              # 3. Scan product media directly for native 3D files
               media(first: 10) {
                 nodes {
                   mediaContentType
@@ -50,7 +55,7 @@ export const loader = async ({ request }) => {
                 }
               }
 
-              # Retained fallback metafield slot just in case you ever need a secondary path
+              # Retained fallback metafield slot
               glbFile: metafield(namespace: "custom", key: "glb_model") {
                 reference {
                   ... on GenericFile {
@@ -58,7 +63,6 @@ export const loader = async ({ request }) => {
                   }
                 }
               }
-
             }
           }
         }
@@ -68,12 +72,11 @@ export const loader = async ({ request }) => {
     const responseJson = await response.json();
     const allProducts = responseJson.data?.products?.edges || [];
 
-// Map out and transform data cleanly for your React frontend
+    // Map out and transform data cleanly for your React frontend
     const customizableProducts = allProducts
       .map(edge => {
         const node = edge.node;
 
-        // 💡 Keep the exact nested object properties that your new typescript types expect!
         return {
           id: node.id,
           title: node.title,
@@ -82,12 +85,14 @@ export const loader = async ({ request }) => {
           productType: node.productType || "General",
           image: node.featuredImage?.url || "https://placehold.co/300x300?text=No+Image",
           
-          // Preserve the raw metafield wrappers so parseDieline() can read them natively
+          // Preserve the raw metafield wrappers
           isB2B: node.isB2B, 
-          moq: node.isB2B, // maps to your metafield model interface safely
           dielineConfig: node.dieline,
           
-          // Preserve the raw media nodes structure so getActiveModelUrl() works perfectly!
+          // 💡 FIXED MOQ MAPPING: Pulls the parsed integer string or defaults cleanly to 1
+          moq: node.moqConfig || { value: "1" },
+          
+          // Preserve the raw media nodes structure
           media: node.media || { nodes: [] }
         };
       })
