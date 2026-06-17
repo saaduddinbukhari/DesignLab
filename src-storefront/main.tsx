@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ProductGrid } from './components/ProductGrid';
 import { OverviewPanel } from './components/OverviewPanel';
-import { DesignMode } from './components/DesignMode';
+import { EnquiryScreen } from './components/EnquiryScreen'; // 💡 INJECTED: Connects your new Stitch review workspace
 
 // 💡 Import your state orchestrator hook and helper utilities
 import { useArtworkEditor } from './hooks/useArtworkEditor';
@@ -36,33 +36,59 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleTag);
 }
 
-// 💡 2. Consolidated Stitch Design Theme Extensions
+// 💡 2. Consolidated Stitch Design Theme Extensions matching designlabmain.html color specs
 if ((window as any).tailwind) {
   (window as any).tailwind.config = {
     theme: {
       extend: {
         colors: {
-          "surface-container": "#ebeef3",
-          "outline": "#6e7a73",
-          "on-primary": "#ffffff",
-          "inverse-surface": "#2d3134",
-          "surface-dim": "#d7dadf",
-          "secondary": "#486800",
-          "primary-container": "#008060",
-          "tertiary": "#226254",
-          "on-background": "#181c1f",
-          "on-surface-variant": "#3e4944",
-          "on-surface": "#181c1f",
-          "surface-variant": "#dfe3e7",
-          "surface-container-low": "#f1f4f8",
           "surface-container-lowest": "#ffffff",
-          "primary": "#00654b",
-          "background": "#f6fafe",
-          "surface": "#f6fafe",
-          "outline-variant": "#bdc9c2",
-          "preview-primary": "#6b38d4",
-          "preview-container": "#8455ef",
-          "preview-bg": "#f8f9ff"
+          "outline": "#75777a",
+          "on-secondary-fixed": "#1b1c1a",
+          "primary": "#17191b",
+          "on-secondary": "#ffffff",
+          "on-background": "#1c1c18",
+          "surface-variant": "#e6e2dc",
+          "surface-container-highest": "#e6e2dc",
+          "secondary": "#5e5e5c",
+          "on-tertiary": "#ffffff",
+          "primary-fixed": "#e2e2e5",
+          "outline-variant": "#c5c6ca",
+          "surface-container-low": "#f7f3ed",
+          "inverse-on-surface": "#f5f0ea",
+          "on-surface": "#1c1c18",
+          "on-tertiary-fixed-variant": "#484742",
+          "on-tertiary-container": "#989590",
+          "on-surface-variant": "#44474a",
+          "surface-container-high": "#ece7e2",
+          "inverse-primary": "#c6c6c9",
+          "secondary-container": "#e1dfdc",
+          "surface-container": "#f2ede7",
+          "surface-tint": "#5d5e61",
+          "on-primary-fixed-variant": "#454749",
+          "tertiary-container": "#2f2e2a",
+          "inverse-surface": "#32302d",
+          "on-secondary-fixed-variant": "#474744",
+          "on-error": "#ffffff",
+          "on-primary-fixed": "#1a1c1e",
+          "tertiary-fixed": "#e6e2dc",
+          "error": "#ba1a1a",
+          "primary-container": "#2c2e30",
+          "on-primary-container": "#949598",
+          "surface-bright": "#fdf9f3",
+          "secondary-fixed": "#e4e2de",
+          "primary-fixed-dim": "#c6c6c9",
+          "on-secondary-container": "#636360",
+          "tertiary": "#1a1916",
+          "background": "#fdf9f3",
+          "tertiary-fixed-dim": "#cac6c0",
+          "surface": "#fdf9f3",
+          "on-primary": "#ffffff",
+          "surface-dim": "#ddd9d4",
+          "secondary-fixed-dim": "#c8c6c3",
+          "on-tertiary-fixed": "#1c1c18",
+          "on-error-container": "#93000a",
+          "error-container": "#ffdad6"
         },
         spacing: {
           "margin-page": "32px",
@@ -73,20 +99,20 @@ if ((window as any).tailwind) {
   };
 }
 
-// 💡 Define explicit Type Interfaces for the parsed Liquid Dataset
 interface DesignLabAppProps {
   shopDomain: string;
   loadingAnimationUrl: string;
 }
 
 function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
-  const [currentView, setCurrentView] = useState<'grid' | 'overview' | 'design'>('grid');
+  // 💡 INTERNAL ROUTER TABS: Smoothly shifts across gallery grid, 2D studio editor console, and custom checkout sheets
+  const [currentView, setCurrentView] = useState<'grid' | 'overview' | 'enquiry'>('grid');
   const [selectedProduct, setSelectedProduct] = useState<B2BProduct | null>(null);
   const [products, setProducts] = useState<B2BProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Material Swatch State variable tracking hex updates
-  const [packageColor, setPackageColor] = useState('#ffffff');
+  const [packageColor, setPackageColor] = useState('#F4F2EE');
 
   // 💡 Instantiate your custom hooks framework engine safely
   const {
@@ -119,27 +145,23 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
         if (data.products && data.products.length > 0) {
           setProducts(data.products);
         } else {
+          // Fallback mockup model structure safely structured
           setProducts([
             {
               id: '1',
-              title: 'Custom-B2B-Mug',
-              handle: 'custom-b2b-mug',
+              title: 'Ceramic Vessel',
+              handle: 'ceramic-vessel',
               productType: 'Mugs & Tumblers',
-              variants: { nodes: [{ id: 'v1', sku: 'MUG-001', price: '12.50' }] },
-              media: {
-                nodes: [
-                  {
-                    mediaContentType: 'MODEL_3D',
-                    sources: [{ url: '', format: 'glb' }]
-                  }
-                ]
-              },
-              moq: { value: '50' },
-              dielineConfig: { value: JSON.stringify({ printX: 0, printY: 0, printW: 1024, printH: 256 }) }
+              variants: { nodes: [{ id: 'v1', sku: 'MUG-001', price: '0.00' }] },
+              media: { nodes: [{ mediaContentType: 'MODEL_3D', sources: [{ url: '', format: 'glb' }] }] },
+              moq: { value: '20' },
+              volumeSize: { value: '3oz / 90ml' }, // Essential baseline default fields
+              material: { value: 'Stoneware Clay' },
+              dielineConfig: { value: JSON.stringify({ printX: 0, printY: 0, printW: 1024, printH: 1024 }) }
             }
           ]);
         }
-        setLoading(false)
+        setLoading(false);
       })
       .catch(err => {
         console.error("Proxy routing layer failure:", err);
@@ -147,11 +169,9 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
       });
   }, []);
 
-  // 2. Optimized Lottie Loading Screen Loop Execution
   if (loading) {
     return (
       <div className="w-full h-screen bg-background">
-        {/* 💡 Pass down the parsed safe Shopify CDN URL context */}
         <LoadingScreen 
           animationUrl={loadingAnimationUrl} 
           message="Loading customizer options..." 
@@ -161,35 +181,22 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
   }
 
   return (
-    <main className="font-['Inter'] antialiased w-full h-screen bg-background text-on-background">
-      {/* 💡 View 1: Main Collection Assets Selection Grid */}
+    <main className="antialiased w-full h-screen bg-[#fdf9f3] text-[#1c1c18]">
+      
+      {/* 💡 VIEW 1: OVERHAULED STITCH CATALOGUE SELECTION GRID */}
       {currentView === 'grid' && (
         <ProductGrid 
           products={products}
           onSelectProduct={(product) => {
             setSelectedProduct(product);
-            setCurrentView('overview');
+            setCurrentView('overview'); // Advances cleanly into consolidated workshop space
           }}
         />
       )}
 
-      {/* 💡 View 2: Pre-edit Overview Panel upload screening */}
+      {/* 💡 VIEW 2: INTEGRATED CONSOLIDATED SPLIT STUDIO EDIT CONSOLE PANEL */}
       {currentView === 'overview' && selectedProduct && (
         <OverviewPanel 
-          product={selectedProduct}
-          dieline={currentDieline}
-          modelUrl={activeModelUrl}
-          onBack={() => setCurrentView('grid')}
-          onUpload={(e) => {
-            handleTextureUpload(e, currentDieline, packageColor);
-            setCurrentView('design');
-          }}
-        />
-      )}
-
-      {/* 💡 View 3: Full Interlocking 2D Canvas Drag-and-Drop and 3D Studio Environment */}
-      {currentView === 'design' && selectedProduct && (
-        <DesignMode 
           product={selectedProduct}
           artworks={artworks}
           selectedArtworkId={selectedArtworkId}
@@ -201,40 +208,60 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
           modelUrl={activeModelUrl}
           
           onBack={() => {
-            const canvas = textureCanvasRef.current;
-            if (canvas && artworks.length > 0) {
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                // Resize the underlying sheet smoothly to full crisp 4K density
-                canvas.width = 4096;
-                canvas.height = 4096;
-                ctx.clearRect(0, 0, 4096, 4096);
-                
-                const mult = 4096 / 1024;
-                for (const art of artworks) {
-                  ctx.drawImage(
-                    art.image,
-                    (currentDieline.printX + art.x) * mult,
-                    (currentDieline.printY + art.y) * mult,
-                    art.w * mult,
-                    art.h * mult
-                  );
-                }
-              }
-            }
-            setCurrentView('overview');
+            clearArtworks(); // Scrub scratchpad buffer memory layers on exit
+            setCurrentView('grid');
           }}
-          
           onSelectArtwork={setSelectedArtworkId}
           onRemoveArtwork={(id) => removeArtwork(id, currentDieline, packageColor)}
           onAddArtwork={(e) => handleTextureUpload(e, currentDieline, packageColor)}
           onScaleChange={(scale) => handleScaleChange(scale, currentDieline, packageColor)}
           onColorChange={setPackageColor}
-          onSave={() => alert("Saved!")}
+          
+          // 💡 SWITCH ACTION: Moving on forward to dynamic enquiry data sheet page
+          onSave={() => setCurrentView('enquiry')}
+          
           onMouseDown={(e) => handleMouseDown(e, currentDieline, 500)}
           onMouseMove={(e) => handleMouseMove(e, currentDieline, 500, packageColor)}
           onMouseUp={handleMouseUp}
           isOutOfBounds={(art) => isOutOfBounds(art, currentDieline)}
+        />
+      )}
+
+      {/* 💡 VIEW 3: STITCH REPLICATED 4K FLATTENING INSPECTOR & CHECKOUT SHEET */}
+      {currentView === 'enquiry' && selectedProduct && (
+        <EnquiryScreen
+          product={selectedProduct}
+          packageColor={packageColor}
+          textureCanvas={textureCanvasRef.current}
+          modelUrl={activeModelUrl}
+          onBack={() => setCurrentView('overview')} // Allows infinite return iterations for design tweaks
+          onSubmitEnquiry={async (formData) => {
+            try {
+              // Push the inquiry data packet straight through the proxy tunnel endpoint
+              const response = await fetch("/apps/designlab/api/proxy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "SUBMIT_ENQUIRY",
+                  productTitle: selectedProduct.title,
+                  packageColor: packageColor,
+                  quantity: selectedProduct.moq?.value || "20",
+                  ...formData
+                })
+              });
+              
+              const result = await response.json();
+              if (result.success) {
+                alert("Enquiry Logged Successfully! Our manufacturing queue has received your design sheet.");
+                clearArtworks();
+                setCurrentView('grid'); // Return directly to central catalog view on completion
+              } else {
+                alert(`Submission issue: ${result.error}`);
+              }
+            } catch (err) {
+              alert("Network entry pipeline transmission exception.");
+            }
+          }}
         />
       )}
 
@@ -246,7 +273,6 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
 
 const rootElement = document.getElementById('design-lab-root');
 if (rootElement) {
-  // 💡 Safely read dataset variables directly from the Liquid template markup mounting node
   const shopDomain = rootElement.getAttribute('data-shop-domain') || '';
   const loadingAnimationUrl = rootElement.getAttribute('data-loading-animation-url') || 'loading-animation.json';
 
