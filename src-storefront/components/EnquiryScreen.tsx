@@ -23,7 +23,7 @@ interface EnquiryScreenProps {
     phone: string;
     address: string;
     notes: string;
-    designSnapshot: string; // 💡 Houses the baked 4K string sheet payload
+    designSnapshot: string; // 💡 Houses the baked 4K download link url
   }) => void;
 }
 
@@ -48,7 +48,6 @@ export function EnquiryScreen({
   const generate4KBakePayload = (): string => {
     if (!textureCanvas) return "";
     
-    // Create an isolated out-of-screen processing master node configuration
     const bakeCanvas = document.createElement("canvas");
     bakeCanvas.width = 4096;   // 💡 Pristine industrial print width resolution
     bakeCanvas.height = 4096;  // 💡 Pristine industrial print height resolution
@@ -70,26 +69,66 @@ export function EnquiryScreen({
   const handleFormSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !phone) {
-      alert("Please enter your name, email, and contact numbers to complete your project request log.");
+      alert("Please enter your name, email, and contact numbers to complete your request.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Execute the high-res layout flattening matrix
-      const highResDesignString = generate4KBakePayload();
+      // 1. Compile 4K matrix
+      const highResBase64 = generate4KBakePayload();
+      if (!highResBase64) {
+        throw new Error("Failed to compile canvas snapshot.");
+      }
+
+      // 2. Convert raw data string to native binary Blob array bytes safely
+      const splitData = highResBase64.split(",");
+      const byteString = atob(splitData[1]);
+      const mimeString = splitData[0].split(":")[1].split(";")[0];
       
-      // Dispatch parameters up to your central network proxy channel
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < byteString.length; i++) {
+        uint8Array[i] = byteString.charCodeAt(i);
+      }
+      
+      const fileBlob = new Blob([arrayBuffer], { type: mimeString });
+
+      // Build out standard multipart envelope packet
+      const imageFormData = new FormData();
+      imageFormData.append("file", fileBlob, `designlab-${Date.now()}-print.png`);
+
+      // Fallback baseline image layout destination coordinate
+      let directImageUrl = "https://placehold.co/4096.png?text=Bake+Upload+Error";
+      
+      // 🚀 ZERO-AUTH ASSET TRANSMISSION NODE VIA TMPFILES
+      try {
+        const uploadResponse = await fetch("https://tmpfiles.org/api/v1/upload", {
+          method: "POST",
+          body: imageFormData
+        });
+        const uploadJson = await uploadResponse.json();
+        
+        if (uploadJson.status === "success" && uploadJson.data?.url) {
+          // Instantly map view link to a raw download link asset segment
+          directImageUrl = uploadJson.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+        }
+      } catch (uploadErr) {
+        console.warn("Public background storage channel exception:", uploadErr);
+      }
+      
+      // 3. Complete structural submission handshake upstream
       await onSubmitEnquiry({
         name,
         email,
         phone,
         address,
         notes,
-        designSnapshot: highResDesignString
+        designSnapshot: directImageUrl // Live direct download link passed through cleanly!
       });
     } catch (err) {
       console.error("Inquiry pipeline break:", err);
+      alert("Something went wrong processing your drawing canvas.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,363 +1,174 @@
-import { useEffect } from "react";
-import type {
-  ActionFunctionArgs,
-  HeadersFunction,
-  LoaderFunctionArgs,
-} from "react-router";
-import { useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useState } from "react";
+import type { LoaderFunctionArgs, ActionFunctionArgs, HeadersFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+// 💡 BACKEND LOADER: Instantly queries your active custom design inquiries
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-
-  return null;
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
+
+  try {
+    // Robust multi-parameter fallback filter scanning for either tag or product title prefix
+    const response = await admin.graphql(
+      `#graphql
+      query getDesignEnquiries {
+        draftOrders(first: 50, query: "tag:DesignLab-Enquiry OR title:B2B Custom*", reverse: true) {
+          nodes {
             id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
+            name
+            createdAt
+            note2
+            lineItems(first: 5) {
+              nodes {
+                title
+                quantity
               }
             }
-            demoInfo: metafield(namespace: "$app", key: "demo_info") {
-              jsonValue
-            }
           }
         }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-          metafields: [
-            {
-              namespace: "$app",
-              key: "demo_info",
-              value: "Created by React Router Template",
-            },
-          ],
-        },
-      },
-    },
-  );
-  const responseJson = await response.json();
+      }`
+    );
 
-  const product = responseJson.data!.productCreate!.product!;
-  const variantId = product.variants.edges[0]!.node!.id!;
+    const responseJson = await response.json();
+    const draftOrders = responseJson.data?.draftOrders?.nodes || [];
 
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
+    const enquiries = draftOrders.map((order: any) => {
+      const lines: string[] = order.note2?.split("\n") || [];
+      const emailLine = lines.find(l => l.startsWith("Customer Email:"));
+      const phoneLine = lines.find(l => l.startsWith("Phone Number:"));
+      const addressLine = lines.find(l => l.startsWith("Delivery / Business Address:"));
+      
+      // 💡 Robust scan finding any row that houses the active HTTP delivery address link
+      const cdnLine = lines.find(l => l.includes("http"));
+      let extractedUrl = null;
+      if (cdnLine) {
+        const match = cdnLine.match(/https?:\/\/[^\s]+/);
+        if (match) extractedUrl = match[0];
       }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
-    },
-  );
 
-  const variantResponseJson = await variantResponse.json();
+      return {
+        id: order.id,
+        orderName: order.name,
+        date: new Date(order.createdAt).toLocaleDateString(),
+        email: emailLine ? emailLine.replace("Customer Email:", "").trim() : "N/A",
+        phone: phoneLine ? phoneLine.replace("Phone Number:", "").trim() : "N/A",
+        address: addressLine ? addressLine.replace("Delivery / Business Address:", "").trim() : "N/A",
+        productTitle: order.lineItems.nodes[0]?.title || "Custom Asset",
+        quantity: order.lineItems.nodes[0]?.quantity || 0,
+        textureUrl: extractedUrl,
+        rawNote: order.note2 || "No notes attached."
+      };
+    });
 
-  const metaobjectResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpsertMetaobject($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
-      metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
-        metaobject {
-          id
-          handle
-          title: field(key: "title") {
-            jsonValue
-          }
-          description: field(key: "description") {
-            jsonValue
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }`,
-    {
-      variables: {
-        handle: {
-          type: "$app:example",
-          handle: "demo-entry",
-        },
-        metaobject: {
-          fields: [
-            { key: "title", value: "Demo Entry" },
-            {
-              key: "description",
-              value:
-                "This metaobject was created by the Shopify app template to demonstrate the metaobject API.",
-            },
-          ],
-        },
-      },
-    },
-  );
+    return { enquiries };
+  } catch (error) {
+    console.error("Dashboard inquiry load issue:", error);
+    return { enquiries: [] };
+  }
+};
 
-  const metaobjectResponseJson = await metaobjectResponse.json();
-
-  return {
-    product: responseJson!.data!.productCreate!.product,
-    variant:
-      variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants,
-    metaobject:
-      metaobjectResponseJson!.data!.metaobjectUpsert!.metaobject,
-  };
+// 💡 BACKEND ACTION: Kept as a clean fallback shell since foreground uploading is active!
+export const action = async ({ request }: ActionFunctionArgs) => {
+  return { success: true };
 };
 
 export default function Index() {
-  const fetcher = useFetcher<typeof action>();
+  const { enquiries } = useLoaderData<typeof loader>();
+  const [selectedId, setSelectedId] = useState<string | null>(enquiries.length > 0 ? enquiries[0].id : null);
 
-  const shopify = useAppBridge();
-  const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
-
-  useEffect(() => {
-    if (fetcher.data?.product?.id) {
-      shopify.toast.show("Product created");
-    }
-  }, [fetcher.data?.product?.id, shopify]);
-
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+  const activeEnquiry = enquiries.find(e => e.id === selectedId);
 
   return (
-    <s-page heading="Shopify app template">
-      <s-button slot="primary-action" onClick={generateProduct}>
-        Generate a product
-      </s-button>
+    <s-page heading="DesignLab Manufacturing Queue" subtitle="Review incoming production maps and client project details">
+      {enquiries.length === 0 ? (
+        <s-section heading="No active custom requests">
+          <s-paragraph>When a customer completes a configuration on your storefront, their custom blueprints will automatically populate here.</s-paragraph>
+        </s-section>
+      ) : (
+        <div style={{ display: "flex", gap: "24px", minHeight: "75vh" }}>
+          
+          {/* LEFT SIDE PANEL LIST VIEWPORT */}
+          <div style={{ width: "320px", display: "flex", flexDirection: "column", gap: "12px", flexShrink: 0 }}>
+            <s-text font-weight="bold" variant="heading-sm">SUBMISSIONS</s-text>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto", maxHeight: "70vh" }}>
+              {enquiries.map((item) => {
+                const isSelected = item.id === selectedId;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setSelectedId(item.id)}
+                    style={{
+                      padding: "16px", borderRadius: "12px",
+                      border: isSelected ? "2px solid #17191b" : "1px solid #e1e3e5",
+                      backgroundColor: isSelected ? "#fdf9f3" : "#ffffff", cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifycontent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontWeight: "700", fontSize: "14px", color: "#17191b" }}>{item.orderName}</span>
+                      <span style={{ fontSize: "12px", color: "#75777a" }}>{item.date}</span>
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: "500", color: "#44474a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.productTitle}</div>
+                    <div style={{ fontSize: "12px", color: "#75777a", marginTop: "2px" }}>{item.email}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-      <s-section heading="Congrats on creating a new Shopify app 🎉">
-        <s-paragraph>
-          This embedded app template uses{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/tools/app-bridge"
-            target="_blank"
-          >
-            App Bridge
-          </s-link>{" "}
-          interface examples like an{" "}
-          <s-link href="/app/additional">additional page in the app nav</s-link>
-          , as well as an{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            Admin GraphQL
-          </s-link>{" "}
-          mutation demo, to provide a starting point for app development.
-        </s-paragraph>
-      </s-section>
-      <s-section heading="Get started with products">
-        <s-paragraph>
-          Generate a product with GraphQL and get the JSON output for that
-          product. Learn more about the{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-            target="_blank"
-          >
-            productCreate
-          </s-link>{" "}
-          mutation in our API references. Includes a product{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metafields"
-            target="_blank"
-          >
-            metafield
-          </s-link>{" "}
-          and{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metaobjects"
-            target="_blank"
-          >
-            metaobject
-          </s-link>
-          .
-        </s-paragraph>
-        <s-stack direction="inline" gap="base">
-          <s-button
-            onClick={generateProduct}
-            {...(isLoading ? { loading: true } : {})}
-          >
-            Generate a product
-          </s-button>
-          {fetcher.data?.product && (
-            <s-button
-              onClick={() => {
-                shopify.intents.invoke?.("edit:shopify/Product", {
-                  value: fetcher.data?.product?.id,
-                });
-              }}
-              target="_blank"
-              variant="tertiary"
-            >
-              Edit product
-            </s-button>
-          )}
-        </s-stack>
-        {fetcher.data?.product && (
-          <s-section heading="productCreate mutation">
-            <s-stack direction="block" gap="base">
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>{JSON.stringify(fetcher.data.product, null, 2)}</code>
-                </pre>
-              </s-box>
+          {/* RIGHT SIDE DETAIL WORKBENCH INSPECTION SPACE */}
+          <div style={{ flex: 1, backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e1e3e5", padding: "32px", boxSizing: "border-box" }}>
+            {activeEnquiry ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800", color: "#17191b" }}>Spec Sheet ({activeEnquiry.orderName})</h2>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#75777a" }}>Logged inside dashboard profile on {activeEnquiry.date}</p>
+                  </div>
+                  {activeEnquiry.textureUrl ? (
+                    <s-button variant="primary" onClick={() => window.open(activeEnquiry.textureUrl!, "_blank")}>
+                      Download Print-Ready 4K Map 📥
+                    </s-button>
+                  ) : (
+                    <s-button disabled>No Asset URL Bound</s-button>
+                  )}
+                </div>
 
-              <s-heading>productVariantsBulkUpdate mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>{JSON.stringify(fetcher.data.variant, null, 2)}</code>
-                </pre>
-              </s-box>
+                <hr style={{ border: 0, borderTop: "1px solid #e1e3e5", margin: 0 }} />
 
-              <s-heading>metaobjectUpsert mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>
-                    {JSON.stringify(fetcher.data.metaobject, null, 2)}
-                  </code>
-                </pre>
-              </s-box>
-            </s-stack>
-          </s-section>
-        )}
-      </s-section>
+                <div style={{ display: "flex", gap: "32px" }}>
+                  <div style={{ width: "240px", display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
+                    <div>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Work Email</span>
+                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.email}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Phone Number</span>
+                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.phone}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Shipping Destination</span>
+                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.address}</div>
+                    </div>
+                  </div>
 
-      <s-section slot="aside" heading="App template specs">
-        <s-paragraph>
-          <s-text>Framework: </s-text>
-          <s-link href="https://reactrouter.com/" target="_blank">
-            React Router
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Interface: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/app-home/using-polaris-components"
-            target="_blank"
-          >
-            Polaris web components
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>API: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            GraphQL
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Custom data: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data"
-            target="_blank"
-          >
-            Metafields &amp; metaobjects
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Database: </s-text>
-          <s-link href="https://www.prisma.io/" target="_blank">
-            Prisma
-          </s-link>
-        </s-paragraph>
-      </s-section>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Raw Customizer Note Logs</span>
+                    <pre style={{ margin: 0, padding: "16px", backgroundColor: "#fdf9f3", borderRadius: "8px", fontSize: "12px", whiteSpace: "pre-wrap", color: "#44474a", border: "1px solid #e6e2dc", lineHeight: "1.6" }}>{activeEnquiry.rawNote}</pre>
+                  </div>
+                </div>
 
-      <s-section slot="aside" heading="Next steps">
-        <s-unordered-list>
-          <s-list-item>
-            Build an{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/getting-started/build-app-example"
-              target="_blank"
-            >
-              example app
-            </s-link>
-          </s-list-item>
-          <s-list-item>
-            Explore Shopify&apos;s API with{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-              target="_blank"
-            >
-              GraphiQL
-            </s-link>
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#75777a" }}>Select an entry from the sidebar tracker panel.</div>
+            )}
+          </div>
+
+        </div>
+      )}
     </s-page>
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
-};
+export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);

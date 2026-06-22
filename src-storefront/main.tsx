@@ -155,7 +155,8 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
               variants: { nodes: [{ id: 'v1', sku: 'MUG-001', price: '0.00' }] },
               media: { nodes: [{ mediaContentType: 'MODEL_3D', sources: [{ url: '', format: 'glb' }] }] },
               moq: { value: '20' },
-              volumeSize: { value: '3oz / 90ml' }, // Essential baseline default fields
+              // 💡 FIXED: Explicit mapping properties registered
+              volumeSize: { value: '3oz / 90ml' }, 
               material: { value: 'Stoneware Clay' },
               dielineConfig: { value: JSON.stringify({ printX: 0, printY: 0, printW: 1024, printH: 1024 }) }
             }

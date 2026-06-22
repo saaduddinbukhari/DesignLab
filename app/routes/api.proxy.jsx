@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 
+// 💡 LOADER: Securely queries your inventory along with the dynamic spec sheet fields
 export const loader = async ({ request }) => {
   try {
     const { admin } = await authenticate.public.appProxy(request);
@@ -32,17 +33,25 @@ export const loader = async ({ request }) => {
                 value
               }
               
-              # 2. Fetch the canvas canvas dimensions configuration blueprint
+              # 2. Fetch the canvas dimensions configuration blueprint
               dieline: metafield(namespace: "custom", key: "dieline_config") {
                 value
               }
               
-              # 💡 FIX: Fetch the actual Minimum Order Quantity integer value!
+              # 3. Fetch the actual Minimum Order Quantity integer value!
               moqConfig: metafield(namespace: "custom", key: "minimum_order_quantity") {
                 value
               }
+
+              # 💡 INJECTED: Fetch your spec sheet parameters natively from product settings
+              volumeConfig: metafield(namespace: "custom", key: "designlab_volume_size") {
+                value
+              }
+              materialConfig: metafield(namespace: "custom", key: "designlab_material") {
+                value
+              }
               
-              # 3. Scan product media directly for native 3D files
+              # 4. Scan product media directly for native 3D files
               media(first: 10) {
                 nodes {
                   mediaContentType
@@ -83,21 +92,20 @@ export const loader = async ({ request }) => {
           description: node.description,
           handle: node.handle,
           productType: node.productType || "General",
-          image: node.featuredImage?.url || "https://placehold.co/300x300?text=No+Image",
+          image: node.featuredImage?.url || "https://placehold.co/300x300?text=No+Image", //
           
-          // Preserve the raw metafield wrappers
           isB2B: node.isB2B, 
           dielineConfig: node.dieline,
+          moq: node.moqConfig || { value: "20" }, //
+
+          // Binds fields directly onto runtime grid objects
+          volumeSize: node.volumeConfig || { value: "3oz / 90ml" }, //
+          material: node.materialConfig || { value: "Stoneware Clay" }, //
           
-          // 💡 FIXED MOQ MAPPING: Pulls the parsed integer string or defaults cleanly to 1
-          moq: node.moqConfig || { value: "1" },
-          
-          // Preserve the raw media nodes structure
-          media: node.media || { nodes: [] }
+          media: node.media || { nodes: [] } //
         };
       })
-      // Keep your filter active so only approved assets populate the grid
-      .filter(product => product.isB2B?.value === "true");
+      .filter(product => product.isB2B?.value === "true"); //
 
     return new Response(JSON.stringify({ products: customizableProducts }), {
       status: 200,
@@ -105,8 +113,81 @@ export const loader = async ({ request }) => {
     });
 
   } catch (error) {
-    console.error("❌ App Proxy Critical Loader Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error", details: error.message }), {
+    console.error("❌ App Proxy Critical Loader Error:", error); //
+    return new Response(JSON.stringify({ error: "Internal server error", details: error.message }), { //
+      status: 500, //
+      headers: { "Content-Type": "application/json" }, //
+    });
+  }
+};
+
+// 💡 NEW: COMPLIANT ACTION HANDLER FOR PROCESSING FRONTEND ENQUIRY DATA PACKETS
+export const action = async ({ request }) => {
+  try {
+    const { admin, session } = await authenticate.public.appProxy(request);
+    
+    if (!session || !admin) {
+      return new Response(JSON.stringify({ error: "Unauthorized session channel request context origin." }), { //
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const payload = await request.json();
+
+    if (payload.action === "SUBMIT_ENQUIRY") {
+      const publicCdnUrl = payload.designSnapshot; //
+      
+      if (!publicCdnUrl) {
+        return new Response(JSON.stringify({ error: "Missing compiled layout URL link." }), { //
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Generate the Draft Order record instantly
+      const draftOrderResponse = await admin.graphql(
+        `#graphql
+        mutation draftOrderCreate($input: DraftOrderInput!) {
+          draftOrderCreate(input: $input) {
+            draftOrder {
+              id
+            }
+          }
+        }`,
+        {
+          variables: {
+            input: {
+              // 💡 FIXED NOTE: Drops the live, instantly active 4K blueprint URL straight into the merchant note
+              note: `DesignLab B2B Customization Specs\n\nFull Name: ${payload.name}\nCustomer Email: ${payload.email}\nPhone Number: ${payload.phone}\nDelivery / Business Address: ${payload.address}\nProduction Notes: ${payload.notes}\n\n📥 DOWNLOAD 4K PRINT READY PRODUCTION MAP:\n${publicCdnUrl}`,
+              tags: ["DesignLab-Enquiry"], // Matches your admin dashboard query tag
+              lineItems: [{
+                title: `B2B Custom: ${payload.productTitle} (Base Color: ${payload.packageColor})`, //
+                quantity: parseInt(payload.quantity || "20"), //
+                originalUnitPrice: "0.00" // Compliant field value
+              }]
+            }
+          }
+        }
+      );
+
+      const draftOrderData = await draftOrderResponse.json();
+      if (draftOrderData.errors) throw new Error(JSON.stringify(draftOrderData.errors)); //
+
+      return new Response(JSON.stringify({ success: true }), { //
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "Unsupported operation request transmission channel method type." }), { //
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    console.error("❌ Critical App Proxy Action Submission Exception:", error); //
+    return new Response(JSON.stringify({ error: "Failed to compile custom design submission form fields data.", details: error.message }), { //
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
