@@ -61,6 +61,9 @@ export function ModelViewport({
 }: ModelViewportProps) {
   const { scene } = useGLTF(modelUrl);
   const textureRef = useRef<THREE.Texture | null>(null);
+  
+  // 💡 INJECTED: Track whether the active asset requires continuous re-upload passes
+  const isStaticRef = useRef(false);
 
   useEffect(() => {
     // 1. First Pass: Apply base glaze color to all body parts EXCEPT the customcanvas mesh
@@ -81,11 +84,11 @@ export function ModelViewport({
     // 2. Second Pass: Clear old texture data layers safely
     textureRef.current?.dispose();
 
-    // 💡 SCENARIO A: Admin Dashboard View -> Load and display the transparent bake texture directly from Cloudinary link
+    // 💡 SCENARIO A: Admin Dashboard View -> Load and display the static transparent texture from Cloudinary
     if (adminTextureUrl) {
-      const loader = new THREE.TextureLoader();
+      isStaticRef.current = true; // Mark as static to stop infinite frame-by-frame uploads!
       
-      // Cloudinary completely honors this, allowing unhindered pixel compilation inside the Iframe!
+      const loader = new THREE.TextureLoader();
       loader.setCrossOrigin("anonymous");
       
       loader.load(adminTextureUrl, (fetchedTex) => {
@@ -115,6 +118,8 @@ export function ModelViewport({
     }
     // 💡 SCENARIO B: FrontEnd Storefront Studio View -> Apply local interactive drawing canvas
     else if (textureCanvas) {
+      isStaticRef.current = false; // Requires active ongoing viewport frame sync loops
+      
       const tex = new THREE.CanvasTexture(textureCanvas);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 16;
@@ -147,7 +152,10 @@ export function ModelViewport({
   }, [scene, textureCanvas, packageColor, adminTextureUrl]);
 
   useFrame(() => {
-    if (textureRef.current) textureRef.current.needsUpdate = true;
+    // 💡 OPTIMIZATION FIXED: Only force texture updates if the texture is an active HTML design canvas!
+    if (textureRef.current && !isStaticRef.current) {
+      textureRef.current.needsUpdate = true;
+    }
   });
 
   return <primitive object={scene} dispose={null} scale={1.5} />;
