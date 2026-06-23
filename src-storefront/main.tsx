@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
-// 💡 Import your clean, newly migrated modular components
+// 💡 Import your clean, modular components
 import { LoadingScreen } from './components/LoadingScreen';
 import { ProductGrid } from './components/ProductGrid';
 import { OverviewPanel } from './components/OverviewPanel';
-import { EnquiryScreen } from './components/EnquiryScreen'; // 💡 INJECTED: Connects your new Stitch review workspace
+import { EnquiryScreen } from './components/EnquiryScreen';
 
 // 💡 Import your state orchestrator hook and helper utilities
 import { useArtworkEditor } from './hooks/useArtworkEditor';
@@ -105,16 +105,12 @@ interface DesignLabAppProps {
 }
 
 function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
-  // 💡 INTERNAL ROUTER TABS: Smoothly shifts across gallery grid, 2D studio editor console, and custom checkout sheets
   const [currentView, setCurrentView] = useState<'grid' | 'overview' | 'enquiry'>('grid');
   const [selectedProduct, setSelectedProduct] = useState<B2BProduct | null>(null);
   const [products, setProducts] = useState<B2BProduct[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Material Swatch State variable tracking hex updates
   const [packageColor, setPackageColor] = useState('#F4F2EE');
 
-  // 💡 Instantiate your custom hooks framework engine safely
   const {
     artworks,
     selectedArtworkId,
@@ -132,12 +128,10 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
     getCurrentScale,
   } = useArtworkEditor();
 
-  // Compute parsed dieline configurations safely out of dynamic metafield tags
   const currentDieline = parseDieline(selectedProduct?.dielineConfig);
   const activeModelUrl = getActiveModelUrl(selectedProduct);
   const currentScale = getCurrentScale(currentDieline);
 
-  // Fetch product listings from the App Proxy routing layer on mount
   useEffect(() => {
     fetch('/apps/designlab/api/proxy')
       .then(res => res.json())
@@ -145,7 +139,6 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
         if (data.products && data.products.length > 0) {
           setProducts(data.products);
         } else {
-          // Fallback mockup model structure safely structured
           setProducts([
             {
               id: '1',
@@ -155,7 +148,6 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
               variants: { nodes: [{ id: 'v1', sku: 'MUG-001', price: '0.00' }] },
               media: { nodes: [{ mediaContentType: 'MODEL_3D', sources: [{ url: '', format: 'glb' }] }] },
               moq: { value: '20' },
-              // 💡 FIXED: Explicit mapping properties registered
               volumeSize: { value: '3oz / 90ml' }, 
               material: { value: 'Stoneware Clay' },
               dielineConfig: { value: JSON.stringify({ printX: 0, printY: 0, printW: 1024, printH: 1024 }) }
@@ -184,18 +176,16 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
   return (
     <main className="antialiased w-full h-screen bg-[#fdf9f3] text-[#1c1c18]">
       
-      {/* 💡 VIEW 1: OVERHAULED STITCH CATALOGUE SELECTION GRID */}
       {currentView === 'grid' && (
         <ProductGrid 
           products={products}
           onSelectProduct={(product) => {
             setSelectedProduct(product);
-            setCurrentView('overview'); // Advances cleanly into consolidated workshop space
+            setCurrentView('overview');
           }}
         />
       )}
 
-      {/* 💡 VIEW 2: INTEGRATED CONSOLIDATED SPLIT STUDIO EDIT CONSOLE PANEL */}
       {currentView === 'overview' && selectedProduct && (
         <OverviewPanel 
           product={selectedProduct}
@@ -209,7 +199,7 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
           modelUrl={activeModelUrl}
           
           onBack={() => {
-            clearArtworks(); // Scrub scratchpad buffer memory layers on exit
+            clearArtworks();
             setCurrentView('grid');
           }}
           onSelectArtwork={setSelectedArtworkId}
@@ -217,10 +207,7 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
           onAddArtwork={(e) => handleTextureUpload(e, currentDieline, packageColor)}
           onScaleChange={(scale) => handleScaleChange(scale, currentDieline, packageColor)}
           onColorChange={setPackageColor}
-          
-          // 💡 SWITCH ACTION: Moving on forward to dynamic enquiry data sheet page
           onSave={() => setCurrentView('enquiry')}
-          
           onMouseDown={(e) => handleMouseDown(e, currentDieline, 500)}
           onMouseMove={(e) => handleMouseMove(e, currentDieline, 500, packageColor)}
           onMouseUp={handleMouseUp}
@@ -228,14 +215,13 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
         />
       )}
 
-      {/* 💡 VIEW 3: STITCH REPLICATED 4K FLATTENING INSPECTOR & CHECKOUT SHEET */}
       {currentView === 'enquiry' && selectedProduct && (
         <EnquiryScreen
           product={selectedProduct}
           packageColor={packageColor}
           textureCanvas={textureCanvasRef.current}
           modelUrl={activeModelUrl}
-          onBack={() => setCurrentView('overview')} // Allows infinite return iterations for design tweaks
+          onBack={() => setCurrentView('overview')}
           onSubmitEnquiry={async (formData) => {
             try {
               // Push the inquiry data packet straight through the proxy tunnel endpoint
@@ -247,6 +233,8 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
                   productTitle: selectedProduct.title,
                   packageColor: packageColor,
                   quantity: selectedProduct.moq?.value || "20",
+                  // 💡 STANDARD APPROACH FIXED: Pass the real product variant ID node over the proxy tunnel
+                  variantId: selectedProduct.variants?.nodes?.[0]?.id,
                   ...formData
                 })
               });
@@ -255,7 +243,7 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
               if (result.success) {
                 alert("Enquiry Logged Successfully! Our manufacturing queue has received your design sheet.");
                 clearArtworks();
-                setCurrentView('grid'); // Return directly to central catalog view on completion
+                setCurrentView('grid');
               } else {
                 alert(`Submission issue: ${result.error}`);
               }
@@ -266,7 +254,6 @@ function DesignLabApp({ shopDomain, loadingAnimationUrl }: DesignLabAppProps) {
         />
       )}
 
-      {/* Hidden offscreen canvas element serving the ThreeJS render pipeline */}
       <canvas ref={textureCanvasRef} style={{ display: 'none' }} />
     </main>
   );

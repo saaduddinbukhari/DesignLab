@@ -56,8 +56,8 @@ export function EnquiryScreen({
     if (!ctx) return "";
 
     // 1. Flood the texture canvas with the exact selected base glaze color
-    ctx.fillStyle = packageColor;
-    ctx.fillRect(0, 0, 4096, 4096);
+    //ctx.fillStyle = packageColor;
+    //ctx.fillRect(0, 0, 4096, 4096);
 
     // 2. Sample, map, and scale your active artwork configuration across the matrix
     ctx.drawImage(textureCanvas, 0, 0, 4096, 4096);

@@ -10,7 +10,7 @@ interface ModelViewportProps {
   isAutoRotating?: boolean;
 }
 
-/** 💡 UPGRADED SCENE RUNTIME FOR OVERVIEW PANEL: Animates the camera orbit for realistic HDR world movement */
+/** 🌌 UPGRADED SCENE RUNTIME FOR OVERVIEW PANEL: Animates the camera orbit for realistic HDR world movement */
 export function StaticScene({ modelUrl, isAutoRotating = false }: { modelUrl: string; isAutoRotating?: boolean }) {
   const { scene } = useGLTF(modelUrl);
   const { camera } = useThree();
@@ -22,7 +22,7 @@ export function StaticScene({ modelUrl, isAutoRotating = false }: { modelUrl: st
   const [welcomeSpinComplete, setWelcomeSpinComplete] = useState(false);
   
   const welcomeTargetRotation = Math.PI * 2; // Exactly 360 degrees
-  const gracefulSpeed = 0.005; // 💡 MATCHED VELOCITY: Perfectly matches your smooth perpetual spin speed
+  const gracefulSpeed = 0.005; // 🚀 MATCHED VELOCITY: Perfectly matches your smooth perpetual spin speed
 
   useFrame(() => {
     // 1️⃣ Sequence A: Handle the initial introductory welcome 360° orbit
@@ -75,7 +75,24 @@ export function ModelViewport({
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
   useEffect(() => {
+    // 💡 MOVE 1: Traverse and apply your custom base color independently of the canvas context!
+    scene.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+
+      if (!mesh.name.toLowerCase().includes("customcanvas")) {
+        const mat = mesh.material as THREE.MeshStandardMaterial;
+        if (mat) {
+          mat.color.set(packageColor);
+          mat.map = null;
+          mat.needsUpdate = true;
+        }
+      }
+    });
+
+    // 💡 MOVE 2: If textureCanvas is absent (like inside the Admin panel viewport), exit safely here!
     if (!textureCanvas) return;
+    
     textureRef.current?.dispose();
 
     const tex = new THREE.CanvasTexture(textureCanvas);
@@ -106,13 +123,6 @@ export function ModelViewport({
           side: THREE.DoubleSide,
           depthWrite: false,
         });
-      } else {
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        if (mat) {
-          mat.color.set(packageColor);
-          mat.map = null;
-          mat.needsUpdate = true;
-        }
       }
     });
   }, [scene, textureCanvas, packageColor]);
