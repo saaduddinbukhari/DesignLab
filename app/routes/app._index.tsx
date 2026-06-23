@@ -1,6 +1,6 @@
-import { useState, useEffect, Suspense } from "react";
-import type { LoaderFunctionArgs, ActionFunctionArgs, HeadersFunction } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
+import { useState, Suspense } from "react";
+import type { LoaderFunctionArgs, HeadersFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
@@ -22,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             id
             name
             createdAt
-            note2 # 💡 FIXED: Changed from note to note2 to match Shopify's GraphQL Schema!
+            note2
             lineItems(first: 5) {
               nodes {
                 title
@@ -57,7 +57,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const draftOrders = responseJson.data?.draftOrders?.nodes || [];
 
     const enquiries = draftOrders.map((order: any) => {
-      const lines: string[] = order.note2?.split("\n") || []; // 💡 FIXED: note2
+      const lines: string[] = order.note2?.split("\n") || [];
       const nameLine = lines.find(l => l.startsWith("Full Name:"));
       const emailLine = lines.find(l => l.startsWith("Customer Email:"));
       const phoneLine = lines.find(l => l.startsWith("Phone Number:"));
@@ -66,7 +66,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const lineItemNode = order.lineItems?.nodes?.[0];
       const titleLine = lineItemNode?.title || "Custom Asset";
 
-      // STANDARD APPROACH: Read design data directly from structured custom line properties!
+      // Read design data directly from structured custom line properties
       const attributes = lineItemNode?.customAttributes || [];
       
       const colorAttr = attributes.find((a: any) => a.key === "Selected Base Color");
@@ -75,12 +75,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const mapAttr = attributes.find((a: any) => a.key === "Production Map URL");
       const extractedUrl = mapAttr ? mapAttr.value : null;
 
-      // NATIVE HOOK: Resolves original .glb media nodes natively because the product link is intact!
+      // Resolves original .glb media nodes natively because the product link is intact
       const productMedia = lineItemNode?.product?.media?.nodes || [];
       const model3DNode = productMedia.find((m: any) => m.mediaContentType === "MODEL_3D");
       const realGlbUrl = model3DNode?.sources?.find((s: any) => s.format === "glb")?.url || null;
-      
-      const isTemporary = extractedUrl && extractedUrl.includes("tmpfiles.org");
 
       return {
         id: order.id,
@@ -95,8 +93,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         textureUrl: extractedUrl,
         packageColor: packageColor,
         modelUrl: realGlbUrl,
-        rawNote: order.note2 || "No notes attached.", // 💡 FIXED: note2
-        hasPendingSnapshot: isTemporary
+        rawNote: order.note2 || "No notes attached."
       };
     });
 
@@ -107,110 +104,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-// 💡 BACKEND MIGRATION ACTION: Transfers temporary layouts to lifetime CDN static paths securely
-export const action = async ({ ActionFunctionArgs, request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
-  const formData = await request.formData();
-  const draftOrderId = formData.get("draftOrderId") as string;
-  const tempImageUrl = formData.get("tempImageUrl") as string;
-
-  try {
-    if (!tempImageUrl || !draftOrderId) return { success: true };
-
-    const fileName = `designlab-${Date.now()}-production-sheet.png`;
-
-    // STAGE 1: Handshake file allocation markers
-    const stagedResponse = await admin.graphql(
-      `#graphql
-      mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
-        stagedUploadsCreate(input: $input) {
-          stagedTargets { url resourceUrl parameters { name value } }
-        }
-      }`,
-      { variables: { input: [{ filename: fileName, mimeType: "image/png", resource: "FILE" }] } }
-    );
-    const stagedRes = await stagedResponse.json();
-    const target = stagedRes.data?.stagedUploadsCreate?.stagedTargets?.[0];
-
-    if (!target) throw new Error("Shopify generic file staging parameter handshake failed.");
-
-    // STAGE 2: Fetch array buffer bytes down into type-enforced memory segments
-    const fileResponse = await fetch(tempImageUrl);
-    if (!fileResponse.ok) throw new Error(`Stale file download reference status: ${fileResponse.status}`);
-    
-    const arrayBuffer = await fileResponse.arrayBuffer();
-    const enforcedPngBlob = new Blob([arrayBuffer], { type: "image/png" });
-
-    const multipartForm = new FormData();
-    target.parameters.forEach(({ name, value }: any) => multipartForm.append(name, value));
-    multipartForm.append("file", enforcedPngBlob, fileName);
-    
-    const uploadRes = await fetch(target.url, { method: "POST", body: multipartForm });
-    if (!uploadRes.ok) throw new Error("Staging area bucket storage transmission failure.");
-
-    // STAGE 3: Register asset permanently into merchant account media bank
-    const commitResponse = await admin.graphql(
-      `#graphql
-      mutation fileCreate($files: [FileCreateInput!]!) {
-        fileCreate(files: $files) { files { ... on GenericFile { url } } }
-      }`,
-      { variables: { files: [{ alt: `DesignLab Production Map`, contentType: "FILE", originalSource: target.resourceUrl }] } }
-    );
-    const commitRes = await commitResponse.json();
-    const shopifyCDNUrl = commitRes.data?.fileCreate?.files?.[0]?.url || "";
-
-    if (!shopifyCDNUrl) throw new Error("Failed to resolve permanent lifetime Shopify CDN target link.");
-
-    // STAGE 4: Cleanly update tracking text note targets
-    const orderLookup = await admin.graphql(
-      `#graphql
-      query lookupOrderNote($id: ID!) { draftOrder(id: $id) { note2 } }` , // 💡 FIXED: note2
-      { variables: { id: draftOrderId } }
-    );
-    const lookupRes = await orderLookup.json();
-    const currentNote = lookupRes.data?.draftOrder?.note2 || ""; // 💡 FIXED: note2
-
-    const updatedNote = currentNote.replace(tempImageUrl, shopifyCDNUrl);
-
-    await admin.graphql(
-      `#graphql
-      mutation rewriteNoteDetails($id: ID!, $note: String!) {
-        draftOrderUpdate(id: $id, input: { note: $note }) { draftOrder { id } }
-      }`,
-      { variables: { id: draftOrderId, note: updatedNote } }
-    );
-
-    return { success: true };
-  } catch (err: any) {
-    console.error("Admin file hydration error:", err);
-    return { error: err.message || "Failed background asset migration pass." };
-  }
-};
-
 export default function Index() {
   const { enquiries } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
   const [selectedId, setSelectedId] = useState<string | null>(enquiries.length > 0 ? enquiries[0].id : null);
-  
-  // ERROR GUARD RAIL: Blocks problematic or expired snapshots from infinite looping retries
-  const [failedSyncs, setFailedSyncs] = useState<string[]>([]);
 
   const activeEnquiry = enquiries.find(e => e.id === selectedId);
-
-  useEffect(() => {
-    const pendingItem = enquiries.find(e => e.hasPendingSnapshot && !failedSyncs.includes(e.id));
-    if (pendingItem && fetcher.state === "idle") {
-      if (fetcher.data && (fetcher.data as any).error) {
-        setFailedSyncs(prev => [...prev, pendingItem.id]);
-        return;
-      }
-      fetcher.submit(
-        { draftOrderId: pendingItem.id, tempImageUrl: pendingItem.textureUrl || "" },
-        { method: "POST" }
-      );
-    }
-  }, [enquiries, fetcher, failedSyncs]);
-
   const basicBackupModel = "https://raw.githubusercontent.com/KhronosGroup/GLTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb";
 
   return (
@@ -220,7 +118,8 @@ export default function Index() {
           <s-paragraph>When a customer completes a configuration on your storefront, their custom blueprints will automatically populate here.</s-paragraph>
         </s-section>
       ) : (
-        <div style={{ display: "flex", gap: "24px", minHeight: "75vh" }}>
+        // 💡 FIX: Restrict the main row layout to a clean max-width bounds to prevent viewport pushing
+        <div style={{ display: "flex", gap: "24px", minHeight: "75vh", width: "100%", maxWidth: "1280px", boxSizing: "border-box" }}>
           
           {/* LEFT SIDE PANEL LIST VIEWPORT */}
           <div style={{ width: "320px", display: "flex", flexDirection: "column", gap: "12px", flexShrink: 0 }}>
@@ -245,9 +144,6 @@ export default function Index() {
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: "500", color: "#44474a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.productTitle}</div>
                     <div style={{ fontSize: "12px", color: "#75777a", marginTop: "2px" }}>{item.customerName}</div>
-                    {item.hasPendingSnapshot && !failedSyncs.includes(item.id) && (
-                      <div style={{ marginTop: "6px", fontSize: "11px", color: "#b25e00", fontWeight: "600" }}>🔄 Archiving Map to Shopify Files...</div>
-                    )}
                   </div>
                 );
               })}
@@ -255,10 +151,11 @@ export default function Index() {
           </div>
 
           {/* RIGHT SIDE DETAIL WORKBENCH INSPECTION SPACE */}
-          <div style={{ flex: 1, backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e1e3e5", padding: "32px", boxSizing: "border-box" }}>
+          {/* 💡 FIX: Added minWidth: 0 to force Flexbox to calculate its true parent width rather than trusting sizing measurements */}
+          <div style={{ flex: 1, minWidth: 0, backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e1e3e5", padding: "32px", boxSizing: "border-box" }}>
             {activeEnquiry ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
                   <div>
                     <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800", color: "#17191b" }}>Spec Sheet ({activeEnquiry.orderName})</h2>
                     <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#75777a" }}>Logged inside dashboard profile on {activeEnquiry.date}</p>
@@ -274,7 +171,7 @@ export default function Index() {
 
                 <hr style={{ border: 0, borderTop: "1px solid #e1e3e5", margin: 0 }} />
 
-                <div style={{ display: "flex", gap: "32px" }}>
+                <div style={{ display: "flex", gap: "32px", width: "100%" }}>
                   <div style={{ width: "240px", display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
                     <div>
                       <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Contact Name</span>
@@ -302,7 +199,8 @@ export default function Index() {
                   </div>
 
                   {/* Interactive 3D Review Canvas */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {/* 💡 FIX: Added minWidth: 0 here as well to cleanly terminate horizontal canvas trailing inflation errors */}
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
                     <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Interactive 3D Preview Review</span>
                     <div style={{ width: "100%", height: "280px", backgroundColor: "#f7f3ed", borderRadius: "12px", overflow: "hidden", border: "1px solid #e1e3e5", position: "relative" }}>
                       <Suspense fallback={<div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#75777a" }}>Loading 3D mesh engine...</div>}>

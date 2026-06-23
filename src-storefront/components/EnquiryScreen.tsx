@@ -97,21 +97,25 @@ export function EnquiryScreen({
       // Build out standard multipart envelope packet
       const imageFormData = new FormData();
       imageFormData.append("file", fileBlob, `designlab-${Date.now()}-print.png`);
+      
+      // 💡 CLOUDINARY LIVE ROUTING PRESETS
+      imageFormData.append("upload_preset", "Designlab"); // 👈 PASTE YOUR UNSIGNED PRESET NAME HERE
 
       // Fallback baseline image layout destination coordinate
-      let directImageUrl = "https://placehold.co/4096.png?text=Bake+Upload+Error";
+      let directImageUrl = "https://placehold.co/4096.png?text=Cloudinary+Upload+Error";
       
-      // 🚀 ZERO-AUTH ASSET TRANSMISSION NODE VIA TMPFILES
+      // 🚀 SECURE MEDIA INGESTION GATEWAY VIA CLOUDINARY
       try {
-        const uploadResponse = await fetch("https://tmpfiles.org/api/v1/upload", {
+        const uploadResponse = await fetch("https://api.cloudinary.com/v1_1/dkfhlfiwl/image/upload", {
           method: "POST",
           body: imageFormData
         });
         const uploadJson = await uploadResponse.json();
         
-        if (uploadJson.status === "success" && uploadJson.data?.url) {
-          // Instantly map view link to a raw download link asset segment
-          directImageUrl = uploadJson.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+        if (uploadJson.secure_url) {
+          directImageUrl = uploadJson.secure_url; // Permanent lifetime secure HTTPS delivery path asset URL string
+        } else if (uploadJson.error) {
+          console.error("Cloudinary Error Log:", uploadJson.error.message);
         }
       } catch (uploadErr) {
         console.warn("Public background storage channel exception:", uploadErr);
@@ -124,7 +128,7 @@ export function EnquiryScreen({
         phone,
         address,
         notes,
-        designSnapshot: directImageUrl // Live direct download link passed through cleanly!
+        designSnapshot: directImageUrl // Direct, open CORS link passed through cleanly!
       });
     } catch (err) {
       console.error("Inquiry pipeline break:", err);
