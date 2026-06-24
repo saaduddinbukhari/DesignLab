@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { B2BProduct } from "../types/customizer";
-import { LayersIcon, Cross2Icon, BlendingModeIcon } from "@radix-ui/react-icons"; 
+// 💡 SECURED: Kept your exact import and cleanly added GridIcon and BackpackIcon from the same library
+import { LayersIcon, Cross2Icon, BlendingModeIcon, GridIcon, BackpackIcon } from "@radix-ui/react-icons"; 
 
 interface ProductGridProps {
   products: B2BProduct[];
@@ -8,11 +9,11 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
-  // 💡 Welcome Introduction Modal State Management Tracking Toggles
+  // 🎛️ Welcome Introduction Modal State Management Tracking Toggles
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(true);
   const [isWelcomeAnimating, setIsWelcomeAnimating] = useState(false);
 
-  // 💡 Details Selection Expansion Modal State Toggles
+  // 🎛️ Details Selection Expansion Modal State Toggles
   const [selectedModalProduct, setSelectedModalProduct] = useState<B2BProduct | null>(null);
   const [isModalAnimating, setIsModalAnimating] = useState(false);
 
@@ -48,7 +49,7 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
         padding: "48px 24px"
       }}
     >
-      {/* 🛒 Main Catalog Grid Frame Container Box */}
+      {/* 📦 Main Catalog Grid Frame Container Box */}
       <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
         <header style={{ nobilityContext: "none", marginBottom: "40px", paddingLeft: "8px" }}>
           <div style={{ fontSize: "14px", color: "#636360", fontWeight: "500" }}>
@@ -126,7 +127,7 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
         </main>
       </div>
 
-      {/* 🔮 EXPANSION PRODUCT DETAIL MODAL LAYER */}
+      {/* 🛎️ EXPANSION PRODUCT DETAIL MODAL LAYER */}
       {selectedModalProduct && (
         <div 
           style={{
@@ -185,7 +186,7 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
         </div>
       )}
 
-      {/* 💡 THE WELCOME INTRODUCTION POPUP MODAL OVERLAY SHEET */}
+      {/* 🎛️ THE WELCOME INTRODUCTION POPUP MODAL OVERLAY SHEET */}
       {isWelcomeOpen && (
         <div 
           style={{
@@ -236,8 +237,9 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
               
               {/* Row 1: Canvas selection tracking node */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "10px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span className="material-symbols-outlined" style={{ color: "#17191b", fontSize: "22px" }}>grid_view</span>
+                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix GridIcon */}
+                  <GridIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Select Your Canvas</h3>
@@ -247,8 +249,9 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
 
               {/* Row 2: Personalize layout parameter configs */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "10px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span className="material-symbols-outlined" style={{ color: "#17191b", fontSize: "22px" }}>palette</span>
+                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix BlendingModeIcon */}
+                  <BlendingModeIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Personalize Your Piece</h3>
@@ -258,8 +261,9 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
 
               {/* Row 3: Bulk ordering tracking summaries */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "10px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span className="material-symbols-outlined" style={{ color: "#17191b", fontSize: "22px" }}>shopping_cart</span>
+                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix BackpackIcon */}
+                  <BackpackIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Bulk Ordering</h3>
