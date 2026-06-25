@@ -1,7 +1,7 @@
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stage } from "@react-three/drei";
-import { ModelViewport } from "./ModelViewport"; // 💡 Reuses your existing high-performance 3D engine hook
+import { ModelViewport } from "./ModelViewport"; 
 import { 
   ArrowLeftIcon, 
   DrawingPinIcon, 
@@ -23,7 +23,8 @@ interface EnquiryScreenProps {
     phone: string;
     address: string;
     notes: string;
-    designSnapshot: string; // 💡 Houses the baked 4K download link url
+    designSnapshot: string; 
+    quantity: string; // 💡 Added explicitly to override the baseline MOQ value upstream
   }) => void;
 }
 
@@ -36,12 +37,17 @@ export function EnquiryScreen({
   onSubmitEnquiry,
 }: EnquiryScreenProps) {
   
+  // Parse Minimum Order Quantity safely out of Shopify's integer metafield
+  const minimumOrderQuantity = parseInt(product.moq?.value || "20", 10);
+
   // 📝 Form Fields Tracking State
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [pincode, setPincode] = useState(""); // 💡 Track local postal code details
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [quantity, setQuantity] = useState<number>(minimumOrderQuantity); // 💡 Initialize with true MOQ bounds
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 💡 4K RESOLUTION TEXTURE BAKE STRATEGY ENGINE LOOP
@@ -49,27 +55,27 @@ export function EnquiryScreen({
     if (!textureCanvas) return "";
     
     const bakeCanvas = document.createElement("canvas");
-    bakeCanvas.width = 4096;   // 💡 Pristine industrial print width resolution
-    bakeCanvas.height = 4096;  // 💡 Pristine industrial print height resolution
+    bakeCanvas.width = 4096;   
+    bakeCanvas.height = 4096;  
     const ctx = bakeCanvas.getContext("2d");
     
     if (!ctx) return "";
 
-    // 1. Flood the texture canvas with the exact selected base glaze color
-    //ctx.fillStyle = packageColor;
-    //ctx.fillRect(0, 0, 4096, 4096);
-
-    // 2. Sample, map, and scale your active artwork configuration across the matrix
     ctx.drawImage(textureCanvas, 0, 0, 4096, 4096);
-
-    // 3. Compress, encode, and export as an uncompressed, high-fidelity Base64 image payload
     return bakeCanvas.toDataURL("image/png", 1.0);
   };
 
   const handleFormSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone) {
-      alert("Please enter your name, email, and contact numbers to complete your request.");
+    
+    // 💡 GUARD RAIL VALIDATION: Ensure custom quantity remains strictly above or equal to MOQ specifications
+    if (quantity < minimumOrderQuantity) {
+      alert(`Minimum order requirement constraint issue: This product line demands a baseline batch of at least ${minimumOrderQuantity} units to authorize an industrial custom manufacturing run.`);
+      return;
+    }
+
+    if (!name || !email || !phone || !address || !pincode) {
+      alert("Please check your contact fields. Full Name, Email, Phone, Shipping Address, and Pincode are all required.");
       return;
     }
 
@@ -94,17 +100,12 @@ export function EnquiryScreen({
       
       const fileBlob = new Blob([arrayBuffer], { type: mimeString });
 
-      // Build out standard multipart envelope packet
       const imageFormData = new FormData();
       imageFormData.append("file", fileBlob, `designlab-${Date.now()}-print.png`);
-      
-      // 💡 CLOUDINARY LIVE ROUTING PRESETS
-      imageFormData.append("upload_preset", "Designlab"); // 👈 PASTE YOUR UNSIGNED PRESET NAME HERE
+      imageFormData.append("upload_preset", "Designlab"); 
 
-      // Fallback baseline image layout destination coordinate
       let directImageUrl = "https://placehold.co/4096.png?text=Cloudinary+Upload+Error";
       
-      // 🚀 SECURE MEDIA INGESTION GATEWAY VIA CLOUDINARY
       try {
         const uploadResponse = await fetch("https://api.cloudinary.com/v1_1/dkfhlfiwl/image/upload", {
           method: "POST",
@@ -113,7 +114,7 @@ export function EnquiryScreen({
         const uploadJson = await uploadResponse.json();
         
         if (uploadJson.secure_url) {
-          directImageUrl = uploadJson.secure_url; // Permanent lifetime secure HTTPS delivery path asset URL string
+          directImageUrl = uploadJson.secure_url; 
         } else if (uploadJson.error) {
           console.error("Cloudinary Error Log:", uploadJson.error.message);
         }
@@ -126,9 +127,11 @@ export function EnquiryScreen({
         name,
         email,
         phone,
-        address,
+        // 💡 Combine address and pincode cleanly so it aggregates nicely into the draft order data sheets
+        address: `${address} - Pincode: ${pincode}`,
         notes,
-        designSnapshot: directImageUrl // Direct, open CORS link passed through cleanly!
+        designSnapshot: directImageUrl,
+        quantity: quantity.toString() // Upstream tunnel deployment string
       });
     } catch (err) {
       console.error("Inquiry pipeline break:", err);
@@ -222,7 +225,7 @@ export function EnquiryScreen({
                 <LayersIcon className="text-[#17191b] w-4 h-4 mb-2" />
                 <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider m-0">Min Order</h3>
                 <p className="text-xs font-bold text-[#17191b] m-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                  {product.moq?.value || "20"} Units
+                  {minimumOrderQuantity} Units
                 </p>
               </div>
             </div>
@@ -239,10 +242,19 @@ export function EnquiryScreen({
                   <label className="text-xs font-bold text-[#5e5e5c]">Full Name</label>
                   <input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Enter contact name" type="text" />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-[#5e5e5c]">Shipping Address</label>
-                  <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Enter delivery destination" type="text" />
+                
+                {/* 💡 Sized and Aligned Address & Pincode Split Row Row */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 flex flex-col gap-1">
+                    <label className="text-xs font-bold text-[#5e5e5c]">Shipping Address</label>
+                    <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Enter delivery destination" type="text" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-[#5e5e5c]">Pincode</label>
+                    <input value={pincode} onChange={(e) => setPincode(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Zip/Pin" type="text" maxLength={10} />
+                  </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-bold text-[#5e5e5c]">Phone Number</label>
@@ -253,6 +265,47 @@ export function EnquiryScreen({
                     <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="work@brand.com" type="email" />
                   </div>
                 </div>
+
+                {/* 💡 QUANTITY BLOCK WITH INTEGRATED MOQ IN-LINE ENGINE TRACKING PROTECTION */}
+                <div className="flex flex-col gap-1 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-bold text-[#17191b] uppercase tracking-wider">Batch Quantity Units</label>
+                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                      MOQ Required: {minimumOrderQuantity}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(prev => Math.max(minimumOrderQuantity, prev - 10))}
+                      className="w-10 h-10 bg-[#f7f3ed] border border-gray-200 rounded-lg font-bold text-[#17191b] hover:bg-gray-200 flex items-center justify-center cursor-pointer select-none transition-colors border-none text-base"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setQuantity(isNaN(val) ? minimumOrderQuantity : val);
+                      }}
+                      onBlur={() => {
+                        if (quantity < minimumOrderQuantity) {
+                          setQuantity(minimumOrderQuantity);
+                        }
+                      }}
+                      className="flex-1 text-center bg-[#f7f3ed] border border-gray-200 rounded-lg h-10 text-sm font-bold text-[#17191b] outline-none focus:border-black transition-colors box-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(prev => prev + 10)}
+                      className="w-10 h-10 bg-[#f7f3ed] border border-gray-200 rounded-lg font-bold text-[#17191b] hover:bg-gray-200 flex items-center justify-center cursor-pointer select-none transition-colors border-none text-base"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-[#5e5e5c]">Additional Requests</label>
                   <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors resize-none" placeholder="Specify required batch quantities or unique printing preferences..." rows={4} />
@@ -283,7 +336,6 @@ export function EnquiryScreen({
         </div>
       </footer>
       
-      {/* Dynamic Grain overlay element asset matching stitch specs */}
       <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.02]" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/natural-paper.png')" }} />
     </div>
   );
