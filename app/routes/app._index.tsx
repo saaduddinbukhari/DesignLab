@@ -57,11 +57,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const draftOrders = responseJson.data?.draftOrders?.nodes || [];
 
     const enquiries = draftOrders.map((order: any) => {
-      const lines: string[] = order.note2?.split("\n") || [];
+      const lines: string[] = order.note2?.split("\n") || []; //
       const nameLine = lines.find(l => l.startsWith("Full Name:"));
       const emailLine = lines.find(l => l.startsWith("Customer Email:"));
       const phoneLine = lines.find(l => l.startsWith("Phone Number:"));
       const addressLine = lines.find(l => l.startsWith("Delivery / Business Address:"));
+      
+      // 💡 EXTRACT CUSTOMER PRODUCTION NOTES ONLY: Cleans out form headers from raw logs
+      const notesLine = lines.find(l => l.startsWith("Production Notes:"));
+      const customerNotesOnly = notesLine ? notesLine.replace("Production Notes:", "").trim() : "No additional requests submitted.";
       
       const lineItemNode = order.lineItems?.nodes?.[0];
       const titleLine = lineItemNode?.title || "Custom Asset";
@@ -93,7 +97,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         textureUrl: extractedUrl,
         packageColor: packageColor,
         modelUrl: realGlbUrl,
-        rawNote: order.note2 || "No notes attached."
+        customerNotes: customerNotesOnly, // Cleaned production instructions segment
       };
     });
 
@@ -112,13 +116,12 @@ export default function Index() {
   const basicBackupModel = "https://raw.githubusercontent.com/KhronosGroup/GLTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb";
 
   return (
-    <s-page heading="DesignLab Manufacturing Queue" subtitle="Review incoming production maps and client project details">
+    <s-page heading="Home" subtitle="Review incoming production maps and client project details">
       {enquiries.length === 0 ? (
         <s-section heading="No active custom requests">
           <s-paragraph>When a customer completes a configuration on your storefront, their custom blueprints will automatically populate here.</s-paragraph>
         </s-section>
       ) : (
-        // 💡 FIX: Restrict the main row layout to a clean max-width bounds to prevent viewport pushing
         <div style={{ display: "flex", gap: "24px", minHeight: "75vh", width: "100%", maxWidth: "1280px", boxSizing: "border-box" }}>
           
           {/* LEFT SIDE PANEL LIST VIEWPORT */}
@@ -151,85 +154,82 @@ export default function Index() {
           </div>
 
           {/* RIGHT SIDE DETAIL WORKBENCH INSPECTION SPACE */}
-          {/* 💡 FIX: Added minWidth: 0 to force Flexbox to calculate its true parent width rather than trusting sizing measurements */}
           <div style={{ flex: 1, minWidth: 0, backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e1e3e5", padding: "32px", boxSizing: "border-box" }}>
-            {activeEnquiry ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800", color: "#17191b" }}>Spec Sheet ({activeEnquiry.orderName})</h2>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#75777a" }}>Logged inside dashboard profile on {activeEnquiry.date}</p>
-                  </div>
-                  {activeEnquiry.textureUrl ? (
-                    <s-button variant="primary" onClick={() => window.open(activeEnquiry.textureUrl!, "_blank")}>
-                      Download Print-Ready 4K Map 📥
-                    </s-button>
-                  ) : (
-                    <s-button disabled>No Asset URL Bound</s-button>
-                  )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              
+              {/* Top Banner Row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800", color: "#17191b" }}>
+                    {activeEnquiry ? `Enquiry Details (${activeEnquiry.orderName})` : "No Record Selected"}
+                  </h2>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#75777a" }}>
+                    {activeEnquiry ? `Date Submitted - ${activeEnquiry.date}` : "Select an entry from the sidebar tracking grid tracker"}
+                  </p>
                 </div>
-
-                <hr style={{ border: 0, borderTop: "1px solid #e1e3e5", margin: 0 }} />
-
-                <div style={{ display: "flex", gap: "32px", width: "100%" }}>
-                  <div style={{ width: "240px", display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
-                    <div>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Contact Name</span>
-                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.customerName}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Work Email</span>
-                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.email}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Phone Number</span>
-                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.phone}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Shipping Destination</span>
-                      <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry.address}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Selected Base Color</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                        <div style={{ width: "20px", height: "20px", borderRadius: "4px", border: "1px solid rgba(0,0,0,0.1)", backgroundColor: activeEnquiry.packageColor }} />
-                        <span style={{ fontSize: "13px", fontWeight: "600", color: "#17191b" }}>{activeEnquiry.packageColor}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Interactive 3D Review Canvas */}
-                  {/* 💡 FIX: Added minWidth: 0 here as well to cleanly terminate horizontal canvas trailing inflation errors */}
-                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Interactive 3D Preview Review</span>
-                    <div style={{ width: "100%", height: "280px", backgroundColor: "#f7f3ed", borderRadius: "12px", overflow: "hidden", border: "1px solid #e1e3e5", position: "relative" }}>
-                      <Suspense fallback={<div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#75777a" }}>Loading 3D mesh engine...</div>}>
-                        <Canvas camera={{ position: [0, 1.2, 3.2], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
-                          <ambientLight intensity={0.5} />
-                          <pointLight position={[10, 10, 10]} intensity={0.6} />
-                          <Stage environment="warehouse" intensity={0.2} adjustCamera={false}>
-                            <ModelViewport 
-                              modelUrl={activeEnquiry.modelUrl || basicBackupModel}
-                              packageColor={activeEnquiry.packageColor}
-                              adminTextureUrl={activeEnquiry.textureUrl || undefined}
-                            />
-                          </Stage>
-                          <OrbitControls enableZoom minDistance={0.1} maxDistance={0.5} />
-                        </Canvas>
-                      </Suspense>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Raw Customizer Note Logs</span>
-                  <pre style={{ margin: 0, padding: "16px", backgroundColor: "#fdf9f3", borderRadius: "8px", fontSize: "12px", whiteSpace: "pre-wrap", color: "#44474a", border: "1px solid #e6e2dc", lineHeight: "1.6" }}>{activeEnquiry.rawNote}</pre>
-                </div>
-
               </div>
-            ) : (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "#75777a" }}>Select an entry from the sidebar tracker panel.</div>
-            )}
+
+              <hr style={{ border: 0, borderTop: "1px solid #e1e3e5", margin: 0 }} />
+
+              <div style={{ display: "flex", gap: "32px", width: "100%" }}>
+                {/* Meta Attributes Panel */}
+                <div style={{ width: "240px", display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Customer Name</span>
+                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry?.customerName || "N/A"}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Email</span>
+                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry?.email || "N/A"}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Phone Number</span>
+                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry?.phone || "N/A"}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Address</span>
+                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#17191b", marginTop: "2px" }}>{activeEnquiry?.address || "N/A"}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Selected Base Color</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                      <div style={{ width: "20px", height: "20px", borderRadius: "4px", border: "1px solid rgba(0,0,0,0.1)", backgroundColor: activeEnquiry?.packageColor || "#F4F2EE" }} />
+                      <span style={{ fontSize: "13px", fontWeight: "600", color: "#17191b" }}>{activeEnquiry?.packageColor || "#F4F2EE"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 💡 PERSISTENT 3D VIEWPORT CANVAS: Kept wrapper mounted continuously to recycle a single hardware context! */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Submitted Design</span>
+                  <div style={{ width: "100%", height: "280px", backgroundColor: "#f7f3ed", borderRadius: "12px", overflow: "hidden", border: "1px solid #e1e3e5", position: "relative" }}>
+                    <Suspense fallback={<div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#75777a" }}>Loading 3D mesh engine...</div>}>
+                      <Canvas camera={{ position: [0, 1.2, 3.2], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
+                        <ambientLight intensity={0.5} />
+                        <pointLight position={[10, 10, 10]} intensity={0.6} />
+                        <Stage environment="warehouse" intensity={0.2} adjustCamera={false}>
+                          <ModelViewport 
+                            modelUrl={activeEnquiry?.modelUrl || basicBackupModel}
+                            packageColor={activeEnquiry?.packageColor || "#F4F2EE"}
+                            adminTextureUrl={activeEnquiry?.textureUrl || undefined}
+                          />
+                        </Stage>
+                        <OrbitControls enableZoom minDistance={0.1} maxDistance={0.5} />
+                      </Canvas>
+                    </Suspense>
+                  </div>
+                </div>
+              </div>
+
+              {/* 📝 CLEANED REPLACEMENT: Display custom text box instructions strictly */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "#75777a", textTransform: "uppercase" }}>Customer Notes</span>
+                <pre style={{ margin: 0, padding: "16px", backgroundColor: "#fdf9f3", borderRadius: "8px", fontSize: "12px", whiteSpace: "pre-wrap", color: "#44474a", border: "1px solid #e6e2dc", lineHeight: "1.6", fontFamily: "inherit" }}>
+                  {activeEnquiry?.customerNotes || "No special requests submitted."}
+                </pre>
+              </div>
+
+            </div>
           </div>
 
         </div>
