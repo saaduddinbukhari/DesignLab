@@ -61,8 +61,8 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "32px",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "28px",
             }}
           >
             {products.map((prod) => {
