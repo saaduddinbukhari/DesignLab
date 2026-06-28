@@ -1,0 +1,193 @@
+/* ==========================================================================
+   DESIGN LAB SCOPED INTERFACE FOR PRESTIGE THEME
+   ========================================================================== */
+
+.client-3d-designer-extension {
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--text-font-family), sans-serif;
+  font-weight: var(--text-font-weight);
+  letter-spacing: var(--text-letter-spacing);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Luxury Editorial Headings mapping Prestige fluid sizes */
+.client-3d-designer-extension h1 {
+  font-size: var(--text-h1);
+  font-family: var(--heading-font-family);
+  font-weight: var(--heading-font-weight);
+  text-transform: var(--heading-text-transform);
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+.client-3d-designer-extension h2 {
+  font-size: var(--text-h2);
+  font-family: var(--heading-font-family);
+  text-transform: var(--heading-text-transform);
+}
+
+/* Scoped Layout Layout structures replacing Tailwind panels */
+.client-3d-designer-extension .main-framework-grid {
+  display: flex;
+  gap: var(--container-gutter);
+  max-width: var(--container-xl-max-width);
+  margin: 0 auto;
+  padding: var(--section-vertical-spacing) var(--container-gutter);
+}
+
+@media screen and (max-width: 999px) {
+  .client-3d-designer-extension .main-framework-grid {
+    flex-direction: column;
+  }
+}
+
+/* Native Card Panels styled to match the site's borders */
+.client-3d-designer-extension .designer-panel-card {
+  background: rgb(var(--background-without-opacity));
+  border: 1px solid var(--app-border);
+  border-radius: var(--input-border-radius);
+  padding: var(--form-gap);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Forms & Text Fields mapped to theme variables */
+.client-3d-designer-extension .form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-control-gap);
+  margin-bottom: var(--fieldset-gap);
+}
+
+.client-3d-designer-extension label {
+  font-size: var(--text-xs);
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--app-text);
+  opacity: 0.8;
+}
+
+.client-3d-designer-extension input[type="text"],
+.client-3d-designer-extension input[type="number"],
+.client-3d-designer-extension input[type="email"],
+.client-3d-designer-extension input[type="tel"],
+.client-3d-designer-extension textarea {
+  background: transparent;
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  font-family: var(--text-font-family);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.client-3d-designer-extension input:focus,
+.client-3d-designer-extension textarea:focus {
+  border-color: var(--app-btn-bg);
+}
+
+/* Native Buttons mapping Prestige structures precisely */
+.client-3d-designer-extension .btn-primary {
+  font: var(--button-font);
+  text-transform: var(--button-text-transform);
+  letter-spacing: var(--button-letter-spacing);
+  background-color: var(--app-btn-bg);
+  color: var(--app-btn-text);
+  border: none;
+  border-radius: var(--button-border-radius);
+  padding: calc(var(--input-padding-block) * 1.5) calc(var(--input-padding-inline) * 2);
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.client-3d-designer-extension .btn-primary:hover {
+  opacity: 0.9;
+}
+
+.client-3d-designer-extension .btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   ISOLATED WORKSPACE CANVASES (Protected from theme global rules)
+   ========================================================================== */
+.client-3d-designer-extension .canvas-3d-frame {
+  background-color: #ddd9d4;
+  border-radius: var(--input-border-radius);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ==========================================================================
+   CATALOG GRID & MODAL ALIGNMENTS FOR PRESTIGE
+   ========================================================================== */
+
+/* The Catalog Layout Grid Wrapper */
+.client-3d-designer-extension .designer-grid-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 32px;
+}
+
+/* Prestige Editorial Luxury Product Cards */
+.client-3d-designer-extension .designer-grid-card {
+  background: transparent;
+  border: 1px solid var(--app-border);
+  border-radius: var(--input-border-radius);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.client-3d-designer-extension .designer-grid-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+}
+
+/* Native Image Backing Frame */
+.client-3d-designer-extension .designer-card-media {
+  aspect-ratio: 1 / 1;
+  background-color: rgba(var(--text-color) / 0.03);
+  overflow: hidden;
+  border-bottom: 1px solid var(--app-border);
+}
+
+/* Badge Context Tags (MOQ indicators) */
+.client-3d-designer-extension .designer-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(var(--text-color) / 0.04);
+  border: 1px solid var(--app-border);
+  border-radius: var(--input-border-radius);
+  padding: 6px 12px;
+}
+
+/* Bulletproof Global Modal Layer Configurations */
+.client-3d-designer-extension .designer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  zIndex: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--container-gutter);
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+  background-color: rgba(0 0 0 / 0.3);
+}
+
+.client-3d-designer-extension .designer-modal-container {
+  position: relative;
+  background-color: rgb(var(--background-without-opacity));
+  border: 1px solid var(--app-border);
+  border-radius: var(--input-border-radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  box-sizing: border-box;
+}

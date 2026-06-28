@@ -1,17 +1,29 @@
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@20..48,100..700,0..1,-50..200" rel="stylesheet">
+{%- comment -%} Pull in our custom scoped app-extension stylesheet instead of CDN Tailwind {%- endcomment -%}
+{{ 'design-lab-extension.css' | asset_url | stylesheet_tag }}
 
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" defer="defer"></script>
+{%- comment -%}
+  We read Prestige's raw RGB tokens directly inside a scoped block style tag 
+  so we can map them gracefully to variables without leaking styles.
+{%- endcomment -%}
+<style>
+  .client-3d-designer-extension {
+    --app-bg: var(--background-gradient, rgb(var(--background-without-opacity, 253 249 243)));
+    --app-text: rgb(var(--text-color, 23 25 27));
+    --app-border: rgb(var(--border-color, 223 227 231));
+    --app-btn-bg: rgb(var(--button-background, 23 25 27));
+    --app-btn-text: rgb(var(--button-text-color, 255 255 255));
+  }
+</style>
 
 <div 
   id="design-lab-root" 
   data-shop-domain="{{ shop.domain }}"
   data-loading-animation-url="{{ 'loading-animation.json' | asset_url }}"
-  class="bg-transparent text-[#181c1f] min-h-screen antialiased"
+  class="client-3d-designer-extension"
 >
-  <p style="text-align: center; padding: 40px; font-family: 'Inter', sans-serif;">Loading Design Lab Interface...</p>
+  <p style="text-align: center; padding: 40px; font-family: var(--text-font-family), sans-serif;">
+    Loading Design Lab Interface...
+  </p>
 </div>
 
 <script src="{{ 'design-lab-frontend.js' | asset_url }}" defer="defer"></script>
@@ -20,6 +32,7 @@
 {
   "name": "Design Lab Interface",
   "target": "section",
-  "templates": ["collection", "page"]
+  "templates": ["collection", "page"],
+  "settings": []
 }
 {% endschema %}

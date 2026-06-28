@@ -43,16 +43,16 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
       style={{ 
         width: "100%", 
         height: "100%", 
-        backgroundColor: "#fdf9f3", // Pure Stitch text element color tokens match
-        fontFamily: "'Manrope', sans-serif",
+        backgroundColor: "var(--app-bg)", // 💡 INHERITED: Prestige background variable
+        fontFamily: "var(--text-font-family), sans-serif", // 💡 INHERITED: Prestige body font
         overflowY: "auto",
-        padding: "48px 24px"
+        padding: "var(--section-vertical-spacing) var(--container-gutter)" // 💡 INHERITED: Prestige native section spacing tokens
       }}
     >
       {/* 📦 Main Catalog Grid Frame Container Box */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
-        <header style={{ nobilityContext: "none", marginBottom: "40px", paddingLeft: "8px" }}>
-          <div style={{ fontSize: "14px", color: "#636360", fontWeight: "500" }}>
+      <div style={{ maxWidth: "var(--container-xl-max-width)", margin: "0 auto" }}>
+        <header style={{ marginBottom: "40px", paddingLeft: "8px" }}>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.7, fontWeight: "500" }}>
             Showing <strong>{products.length}</strong> {products.length === 1 ? 'product' : 'products'}
           </div>
         </header>
@@ -61,7 +61,7 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", 
               gap: "28px",
             }}
           >
@@ -73,26 +73,26 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
                   key={prod.id}
                   onClick={() => handleCardClick(prod)}
                   style={{
-                    backgroundColor: "#ffffff",
-                    borderRadius: "8px",
+                    backgroundColor: "rgb(var(--background-without-opacity))", // 💡 INHERITED: Native content canvas layer
+                    borderRadius: "var(--input-border-radius)", // 💡 INHERITED: Global border radii configurations
                     overflow: "hidden",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
-                    boxShadow: "0px 4px 20px rgba(44, 46, 48, 0.04)",
-                    border: "1px solid rgba(26, 25, 22, 0.05)",
+                    boxShadow: "var(--shadow-sm)", // 💡 INHERITED: Premium layout shadows
+                    border: "1px solid var(--app-border)", // 💡 INHERITED: Prestige global structural border strokes
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "scale(1.01)";
-                    e.currentTarget.style.boxShadow = "0px 8px 30px rgba(44, 46, 48, 0.10)";
+                    e.currentTarget.style.boxShadow = "var(--shadow)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "0px 4px 20px rgba(44, 46, 48, 0.04)";
+                    e.currentTarget.style.boxShadow = "var(--shadow-sm)";
                   }}
                 >
-                  <div style={{ aspectRatio: "1/1", backgroundColor: "#f2ede7", overflow: "hidden", borderBottom: "1px solid rgba(26, 25, 22, 0.05)" }}>
+                  <div style={{ aspectRatio: "1/1", backgroundColor: "rgba(var(--text-color) / 0.02)", overflow: "hidden", borderBottom: "1px solid var(--app-border)" }}>
                     <img
                       src={assetImage}
                       alt={prod.title}
@@ -100,23 +100,23 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
                     />
                   </div>
 
-                  <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ fontSize: "12px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.1em", color: "#5e5e5c" }}>
+                  <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ fontSize: "var(--text-xs)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "var(--text-letter-spacing)", color: "var(--app-text)", opacity: 0.6 }}>
                       {prod.productType || "MUGS & TUMBLERS"}
                     </div>
                     
-                    <div style={{ fontSize: "20px", fontWeight: "600", color: "#17191b", margin: "2px 0" }}>
+                    <div style={{ fontSize: "var(--text-base)", fontWeight: "600", color: "var(--app-text)", margin: "2px 0" }}>
                       {prod.title}
                     </div>
 
-                    <p style={{ fontSize: "14px", color: "#636360", lineHeight: "1.6", margin: "0 0 12px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <p style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.7, lineHeight: "1.5", margin: "0 0 12px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {prod.description || "Create your bespoke corporate layouts interactively on this item inside our live studio customizer mesh suite."}
                     </p>
 
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "#f7f3ed", border: "1px solid rgba(197, 198, 202, 0.3)", borderRadius: "8px", padding: "8px 12px", marginTop: "auto", alignSelf: "flex-start" }}>
-                      <LayersIcon style={{ width: "14px", height: "14px", color: "#474744" }} />
-                      <span style={{ fontSize: "14px", color: "#5e5e5c", fontWeight: "500" }}>
-                        Min Order: <strong style={{ color: "#1c1c18", fontWeight: "600" }}>{prod.moq?.value || "20"} units</strong>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "rgba(var(--text-color) / 0.04)", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", padding: "8px 12px", marginTop: "auto", alignSelf: "flex-start" }}>
+                      <LayersIcon style={{ width: "14px", height: "14px", color: "currentColor", opacity: 0.8 }} />
+                      <span style={{ fontSize: "var(--text-xs)", color: "var(--app-text)", opacity: 0.8, fontWeight: "500" }}>
+                        Min Order: <strong style={{ color: "var(--app-text)", fontWeight: "600" }}>{prod.moq?.value || "20"} units</strong>
                       </span>
                     </div>
                   </div>
@@ -131,53 +131,57 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
       {selectedModalProduct && (
         <div 
           style={{
-            position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", boxSizing: "border-box", backdropFilter: "blur(8px)", backgroundColor: "rgba(23, 25, 27, 0.2)",
+            position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--container-gutter)", boxSizing: "border-box", backdropFilter: "blur(8px)", backgroundColor: "rgba(0, 0, 0, 0.3)",
             opacity: isModalAnimating ? 1 : 0, visibility: isModalAnimating ? "visible" : "hidden", transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
           }}
           onClick={handleCloseModal}
         >
           <div 
             style={{
-              position: "relative", backgroundColor: "#ffffff", width: "100%", maxWidth: "1280px", maxHeight: "90vh", borderRadius: "16px", boxShadow: "0px 12px 60px rgba(44, 46, 48, 0.15)", overflow: "hidden", display: "flex", flexDirection: "row", alignItems: "stretch",
-              transform: isModalAnimating ? "scale(1)" : "scale(0.95)", transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
+              position: "relative", backgroundColor: "rgb(var(--background-without-opacity))", border: "1px solid var(--app-border)", width: "100%", maxWidth: "1100px", maxHeight: "85vh", borderRadius: "var(--input-border-radius)", boxShadow: "var(--shadow-md)", overflow: "hidden", display: "flex", flexDirection: "row", alignItems: "stretch",
+              transform: isModalAnimating ? "scale(1)" : "scale(0.97)", transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={handleCloseModal} style={{ position: "absolute", top: "16px", right: "16px", zIndex: 1100, backgroundColor: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(4px)", border: "none", borderRadius: "50%", padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0px 4px 20px rgba(44, 46, 48, 0.06)" }}>
-              <Cross2Icon style={{ width: "16px", height: "16px", color: "#17191b" }} />
+            <button onClick={handleCloseModal} style={{ position: "absolute", top: "16px", right: "16px", zIndex: 1100, backgroundColor: "rgb(var(--background-without-opacity))", border: "1px solid var(--app-border)", borderRadius: "50%", padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Cross2Icon style={{ width: "16px", height: "16px", color: "currentColor" }} />
             </button>
 
-            <div style={{ width: "60%", backgroundColor: "#f2ede7", overflow: "hidden" }}>
+            <div style={{ width: "55%", backgroundColor: "rgba(var(--text-color) / 0.02)", overflow: "hidden" }}>
               <img src={(selectedModalProduct as any).image || "https://placehold.co/600x600?text=No+Image"} alt={selectedModalProduct.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
 
-            <div style={{ width: "40%", padding: "48px", display: "flex", flexDirection: "column", justifyContent: "space-between", backgroundColor: "#ffffff", overflowY: "auto" }}>
+            <div style={{ width: "45%", padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between", backgroundColor: "rgb(var(--background-without-opacity))", overflowY: "auto" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                 <div>
-                  <span style={{ fontSize: "14px", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.1em", color: "#5e5e5c" }}>{selectedModalProduct.productType || "MUGS & TUMBLERS"}</span>
-                  <h1 style={{ fontSize: "40px", fontWeight: "700", color: "#17191b", margin: "8px 0 0 0", letterSpacing: "-0.02em", lineHeight: "1.1" }}>{selectedModalProduct.title}</h1>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: "500", textTransform: "uppercase", letterSpacing: "var(--text-letter-spacing)", color: "var(--app-text)", opacity: 0.6 }}>{selectedModalProduct.productType || "MUGS & TUMBLERS"}</span>
+                  <h2 style={{ fontSize: "var(--text-xl)", fontWeight: "700", color: "var(--app-text)", margin: "8px 0 0 0", letterSpacing: "-0.02em", lineHeight: "1.1" }}>{selectedModalProduct.title}</h2>
                 </div>
-                <div style={{ display: "inline-flex", alignSelf: "flex-start", backgroundColor: "#f7f3ed", border: "1px solid rgba(197, 198, 202, 0.3)", borderRadius: "6px", padding: "6px 12px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: "500", color: "#5e5e5c" }}>₹ Rates tailored to your design</span>
+                <div style={{ display: "inline-flex", alignSelf: "flex-start", backgroundColor: "rgba(var(--text-color) / 0.04)", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", padding: "6px 12px" }}>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: "500", color: "var(--app-text)", opacity: 0.8 }}>₹ Rates tailored to your design</span>
                 </div>
-                <p style={{ fontSize: "16px", color: "#636360", lineHeight: "1.6", margin: 0 }}>{selectedModalProduct.description || "Crafted from fine-grained stoneware with a soft, matte cream glaze."}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingTop: "24px", borderTop: "1px solid #e6e2dc" }}>
+                <p style={{ fontSize: "var(--text-base)", color: "var(--app-text)", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>{selectedModalProduct.description || "Crafted from fine-grained stoneware with a soft, matte cream glaze."}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingTop: "24px", borderTop: "1px solid var(--app-border)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#2c2c2c" }}>Volume/Size</span>
-                    <span style={{ fontSize: "14px", color: "#5e5e5c" }}>{(selectedModalProduct as any).volumeSize?.value || "3oz / 90ml"}</span>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)" }}>Volume/Size</span>
+                    <span style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.8 }}>{(selectedModalProduct as any).volumeSize?.value || "3oz / 90ml"}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#2c2c2c" }}>Material</span>
-                    <span style={{ fontSize: "14px", color: "#5e5e5c" }}>{(selectedModalProduct as any).material?.value || "Stoneware Clay"}</span>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)" }}>Material</span>
+                    <span style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.8 }}>{(selectedModalProduct as any).material?.value || "Stoneware Clay"}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#2c2c2c" }}>Minimum Order</span>
-                    <span style={{ fontSize: "14px", color: "#5e5e5c", fontWeight: "600" }}>{selectedModalProduct.moq?.value || "20"} units</span>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)" }}>Minimum Order</span>
+                    <span style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", fontWeight: "600" }}>{selectedModalProduct.moq?.value || "20"} units</span>
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "48px" }}>
-                <button onClick={() => { handleCloseModal(); onSelectProduct(selectedModalProduct); }} style={{ width: "100%", backgroundColor: "#17191b", color: "#ffffff", fontSize: "14px", fontWeight: "600", padding: "16px", borderRadius: "8px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: "0px 4px 20px rgba(44, 46, 48, 0.06)" }}>
+                <button 
+                  onClick={() => { handleCloseModal(); onSelectProduct(selectedModalProduct); }}
+                  className="btn-primary"
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
                   <BlendingModeIcon style={{ width: "16px", height: "16px" }} /> Design this product
                 </button>
               </div>
@@ -192,105 +196,82 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1200, // Anchored structural placement sitting above all overlay matrices
+            zIndex: 1200, 
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "24px",
+            padding: "var(--container-gutter)",
             boxSizing: "border-box",
             backdropFilter: "blur(8px)",
-            backgroundColor: "rgba(23, 25, 27, 0.2)",
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
             opacity: isWelcomeAnimating ? 1 : 0,
             visibility: isWelcomeAnimating ? "visible" : "hidden",
             transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
           }}
         >
-          {/* Welcome Card Box Container context wrapper */}
           <div 
             style={{
-              backgroundColor: "#ffffff",
+              backgroundColor: "rgb(var(--background-without-opacity))",
+              border: "1px solid var(--app-border)",
               width: "100%",
-              maxWidth: "500px",
-              borderRadius: "12px",
-              boxShadow: "0px 12px 60px rgba(44, 46, 48, 0.15)",
+              maxWidth: "480px",
+              borderRadius: "var(--input-border-radius)",
               padding: "32px",
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
               gap: "24px",
-              transform: isWelcomeAnimating ? "scale(1)" : "scale(0.95)",
+              transform: isWelcomeAnimating ? "scale(1)" : "scale(0.97)",
               transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
             }}
           >
-            {/* Header Text Segment */}
             <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <h2 style={{ fontSize: "32px", fontWeight: "600", color: "#17191b", margin: 0, letterSpacing: "-0.01em" }}>
+              <h2 style={{ fontSize: "var(--text-xl)", fontWeight: "600", color: "var(--app-text)", margin: 0, letterSpacing: "-0.01em" }}>
                 Welcome to Design Lab
               </h2>
-              <p style={{ fontSize: "16px", color: "#5e5e5c", margin: 0 }}>
+              <p style={{ fontSize: "var(--text-base)", color: "var(--app-text)", opacity: 0.7, margin: 0 }}>
                 Your creative journey starts here.
               </p>
             </div>
 
-            {/* Feature Guideline Informative Rows Lists */}
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "8px 0" }}>
               
-              {/* Row 1: Canvas selection tracking node */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix GridIcon */}
-                  <GridIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
+                <div style={{ backgroundColor: "rgba(var(--text-color) / 0.04)", border: "1px solid var(--app-border)", padding: "11px", borderRadius: "var(--input-border-radius)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <GridIcon style={{ width: "20px", height: "20px", color: "currentColor" }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Select Your Canvas</h3>
-                  <p style={{ fontSize: "14px", color: "#636360", margin: 0, lineHeight: "1.4" }}>Choose any product from our collection to begin.</p>
+                  <h4 style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)", margin: "0 0 2px 0" }}>Select Your Canvas</h4>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.7, margin: 0, lineHeight: "1.4" }}>Choose any product from our collection to begin.</p>
                 </div>
               </div>
 
-              {/* Row 2: Personalize layout parameter configs */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix BlendingModeIcon */}
-                  <BlendingModeIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
+                <div style={{ backgroundColor: "rgba(var(--text-color) / 0.04)", border: "1px solid var(--app-border)", padding: "11px", borderRadius: "var(--input-border-radius)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <BlendingModeIcon style={{ width: "20px", height: "20px", color: "currentColor" }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Personalize Your Piece</h3>
-                  <p style={{ fontSize: "14px", color: "#636360", margin: 0, lineHeight: "1.4" }}>Experiment with different color options and upload your own unique designs.</p>
+                  <h4 style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)", margin: "0 0 2px 0" }}>Personalize Your Piece</h4>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.7, margin: 0, lineHeight: "1.4" }}>Experiment with different color options and upload your own unique designs.</p>
                 </div>
               </div>
 
-              {/* Row 3: Bulk ordering tracking summaries */}
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <div style={{ backgroundColor: "#f7f3ed", padding: "11px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {/* 💡 FIXED: Replaced standard text glyph with pure Radix BackpackIcon */}
-                  <BackpackIcon style={{ width: "20px", height: "20px", color: "#17191b" }} />
+                <div style={{ backgroundColor: "rgba(var(--text-color) / 0.04)", border: "1px solid var(--app-border)", padding: "11px", borderRadius: "var(--input-border-radius)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <BackpackIcon style={{ width: "20px", height: "20px", color: "currentColor" }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#17191b", margin: "0 0 2px 0" }}>Bulk Ordering</h3>
-                  <p style={{ fontSize: "14px", color: "#636360", margin: 0, lineHeight: "1.4" }}>Finalize your design and place high-volume orders with ease.</p>
+                  <h4 style={{ fontSize: "var(--text-sm)", fontWeight: "600", color: "var(--app-text)", margin: "0 0 2px 0" }}>Bulk Ordering</h4>
+                  <p style={{ fontSize: "var(--text-sm)", color: "var(--app-text)", opacity: 0.7, margin: 0, lineHeight: "1.4" }}>Finalize your design and place high-volume orders with ease.</p>
                 </div>
               </div>
 
             </div>
 
-            {/* Dismiss trigger CTA Button element alignment */}
             <button 
               onClick={handleCloseWelcome}
-              style={{
-                width: "100%",
-                backgroundColor: "#17191b",
-                color: "#ffffff",
-                fontSize: "14px",
-                fontWeight: "600",
-                padding: "16px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0px 4px 20px rgba(44, 46, 48, 0.06)",
-                transition: "transform 0.2s"
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
-              onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+              className="btn-primary"
+              style={{ width: "100%" }}
             >
               Get Started
             </button>

@@ -1,13 +1,13 @@
 import { Suspense, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stage } from "@react-three/drei";
-import { ModelViewport } from "./ModelViewport"; 
+import { ModelViewport } from "./ModelViewport"; // 💡 Connects straight to your real-time 3D engine hook
 import { 
-  ArrowLeftIcon, 
   DrawingPinIcon, 
   ActivityLogIcon, 
   LayersIcon, 
-  PaperPlaneIcon 
+  PaperPlaneIcon,
+  ArrowLeftIcon
 } from "@radix-ui/react-icons";
 import type { B2BProduct } from "../types/customizer";
 
@@ -55,7 +55,7 @@ export function EnquiryScreen({
     if (!textureCanvas) return "";
     
     const bakeCanvas = document.createElement("canvas");
-    bakeCanvas.width = 4096;   
+    bakeCanvas.width = 4096;  
     bakeCanvas.height = 4096;  
     const ctx = bakeCanvas.getContext("2d");
     
@@ -70,7 +70,7 @@ export function EnquiryScreen({
     
     // 💡 GUARD RAIL VALIDATION: Ensure custom quantity remains strictly above or equal to MOQ specifications
     if (quantity < minimumOrderQuantity) {
-      alert(`Minimum order requirement constraint issue: This product line demands a baseline batch of at least ${minimumOrderQuantity} units to authorize an industrial custom manufacturing run.`);
+      alert(`Minimum order requirement constraint issue: This product line demands a batch of at least ${minimumOrderQuantity} units to authorize an industrial custom manufacturing run.`);
       return;
     }
 
@@ -102,7 +102,7 @@ export function EnquiryScreen({
 
       const imageFormData = new FormData();
       imageFormData.append("file", fileBlob, `designlab-${Date.now()}-print.png`);
-      imageFormData.append("upload_preset", "Designlab"); 
+      imageFormData.append("upload_preset", "Designlab");
 
       let directImageUrl = "https://placehold.co/4096.png?text=Cloudinary+Upload+Error";
       
@@ -114,7 +114,7 @@ export function EnquiryScreen({
         const uploadJson = await uploadResponse.json();
         
         if (uploadJson.secure_url) {
-          directImageUrl = uploadJson.secure_url; 
+          directImageUrl = uploadJson.secure_url;
         } else if (uploadJson.error) {
           console.error("Cloudinary Error Log:", uploadJson.error.message);
         }
@@ -127,7 +127,6 @@ export function EnquiryScreen({
         name,
         email,
         phone,
-        // 💡 Combine address and pincode cleanly so it aggregates nicely into the draft order data sheets
         address: `${address} - Pincode: ${pincode}`,
         notes,
         designSnapshot: directImageUrl,
@@ -143,34 +142,21 @@ export function EnquiryScreen({
 
   return (
     <div 
-      className="min-h-screen flex flex-col w-full bg-[#fdf9f3] relative overflow-hidden"
-      style={{ fontFamily: "'Manrope', sans-serif" }}
+      className="client-3d-designer-extension" 
+      style={{ width: "100%", paddingBottom: "40px", boxSizing: "border-box" }}
     >
-      
-      {/* 🧭 TopAppBar Navigation Row */}
-      <header className="bg-white border-b border-gray-100 fixed top-0 left-0 w-full z-50 shadow-sm h-16 flex items-center justify-between px-6 box-border">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack}
-            className="hover:bg-gray-50 p-2 rounded-full border-none bg-transparent cursor-pointer flex items-center justify-center transition-all group"
-          >
-            <ArrowLeftIcon style={{ width: "20px", height: "20px", color: "#5e5e5c" }} className="group-hover:text-black" />
-          </button>
-          <span className="text-sm font-semibold text-[#17191b] uppercase tracking-wider select-none">
-            Preview and Submit
-          </span>
-        </div>
-        <div className="w-10 h-10" />
-      </header>
-
       {/* 🎛️ Main Split Screen Framework Workspace */}
-      <main className="pt-16 flex-grow flex flex-col md:flex-row w-full h-[calc(100vh-64px)] overflow-hidden box-border">
+      <main className="main-framework-grid" style={{ marginBottom: "20px" }}>
         
         {/* 📦 LEFT COLUMN: Immersive Real-Time 3D Viewport Gallery Section */}
-        <section className="relative w-full md:w-3/5 h-[45vh] md:h-full bg-[#f7f3ed] flex items-center justify-center overflow-hidden">
-          <div className="w-full h-full bg-[#ddd9d4]">
+        <section className="designer-panel-card" style={{ display: "flex", flexDirection: "column", flex: "1.2", minHeight: "550px" }}>
+          <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--app-border)" }}>
+            <h2 style={{ margin: "0" }}>Review Your Design</h2>
+          </div>
+
+          <div className="canvas-3d-frame" style={{ flexGrow: "1", position: "relative", minHeight: "450px" }}>
             {modelUrl ? (
-              <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">Preparing preview snapshot...</div>}>
+              <Suspense fallback={<div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)", opacity: 0.6 }}>Preparing preview snapshot...</div>}>
                 <Canvas shadows camera={{ position: [0, 1.2, 3.2], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
                   <ambientLight intensity={0.2} />
                   <pointLight position={[10, 10, 10]} intensity={0.2} castShadow />
@@ -181,104 +167,98 @@ export function EnquiryScreen({
                 </Canvas>
               </Suspense>
             ) : (
-              <div className="text-xs text-gray-400">⚠️ Preview data unlinked</div>
+              <div style={{ fontSize: "var(--text-xs)", opacity: 0.5, padding: "24px", position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>⚠️ Preview data unlinked</div>
             )}
           </div>
           
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/10 to-transparent" />
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-sm pointer-events-none">
-            <span className="text-[11px] font-bold tracking-wider text-[#5e5e5c] uppercase">Rotate to inspect layout angles</span>
+          <div style={{ padding: "16px", borderTop: "1px solid var(--app-border)", textAlign: "center" }}>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: "600", letterSpacing: "var(--text-letter-spacing)", opacity: 0.6, textTransform: "uppercase" }}>Rotate model to inspect placement angles</span>
           </div>
         </section>
 
-        {/* 📝 RIGHT COLUMN: Dynamic Metafields Attributes Bento & Contact Data Sheet Form */}
-        <aside className="w-full md:w-2/5 p-6 md:p-8 flex flex-col justify-between bg-[#fdf9f3] z-10 overflow-y-auto no-scrollbar h-full pb-32 box-border">
-          <div className="max-w-md mx-auto md:mx-0 w-full space-y-8">
+        {/* 📝 RIGHT COLUMN: Specifications Bento & Contact Data Sheet Form */}
+        <aside className="designer-panel-card" style={{ display: "flex", flexDirection: "column", flex: "1", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
             
             {/* Branding Specifications Header Row */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-[1px] bg-gray-300" />
-                <span className="text-[11px] font-bold text-[#5e5e5c] uppercase tracking-widest">Your Final Design</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ width: "24px", height: "1px", backgroundColor: "var(--app-border)" }} />
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: "600", opacity: 0.5, textTransform: "uppercase", letterSpacing: "var(--heading-letter-spacing)" }}>Your Specification Summary</span>
               </div>
-              <h1 className="text-4xl font-extrabold text-[#17191b] leading-tight m-0 tracking-tight">{product.title}</h1>
-              <p className="text-base text-[#5e5e5c] m-0 font-medium">{product.productType || "MUGS & TUMBLERS"}</p>
+              <h1 style={{ margin: "4px 0 0 0" }}>{product.title}</h1>
+              <p style={{ fontSize: "var(--text-sm)", opacity: 0.6, margin: 0, fontWeight: "500", textTransform: "uppercase" }}>{product.productType || "MUGS & TUMBLERS"}</p>
             </div>
 
             {/* 🍱 PRODUCT SPECIFICATIONS DATA BENTO ROW */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                <DrawingPinIcon className="text-[#17191b] w-4 h-4 mb-2" />
-                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider m-0">Material</h3>
-                <p className="text-xs font-bold text-[#17191b] m-1 overflow-hidden text-ellipsis whitespace-nowrap">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+              <div style={{ padding: "12px", backgroundColor: "rgba(var(--text-color) / 0.03)", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <DrawingPinIcon style={{ color: "currentColor", width: "14px", height: "14px", opacity: 0.7 }} />
+                <h4 style={{ fontSize: "var(--text-xs)", color: "var(--app-text)", opacity: 0.5, textTransform: "uppercase", margin: 0 }}>Material</h4>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {(product as any).material?.value || "Stoneware Clay"}
-                </p>
+                </div>
               </div>
-              <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                <ActivityLogIcon className="text-[#17191b] w-4 h-4 mb-2" />
-                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider m-0">Size</h3>
-                <p className="text-xs font-bold text-[#17191b] m-1 overflow-hidden text-ellipsis whitespace-nowrap">
+              <div style={{ padding: "12px", backgroundColor: "rgba(var(--text-color) / 0.03)", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <ActivityLogIcon style={{ color: "currentColor", width: "14px", height: "14px", opacity: 0.7 }} />
+                <h4 style={{ fontSize: "var(--text-xs)", color: "var(--app-text)", opacity: 0.5, textTransform: "uppercase", margin: 0 }}>Size</h4>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {(product as any).volumeSize?.value || "3oz / 90ml"}
-                </p>
+                </div>
               </div>
-              <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                <LayersIcon className="text-[#17191b] w-4 h-4 mb-2" />
-                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider m-0">Min Order</h3>
-                <p className="text-xs font-bold text-[#17191b] m-1 overflow-hidden text-ellipsis whitespace-nowrap">
+              <div style={{ padding: "12px", backgroundColor: "rgba(var(--text-color) / 0.03)", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <LayersIcon style={{ color: "currentColor", width: "14px", height: "14px", opacity: 0.7 }} />
+                <h4 style={{ fontSize: "var(--text-xs)", color: "var(--app-text)", opacity: 0.5, textTransform: "uppercase", margin: 0 }}>Min Order</h4>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {minimumOrderQuantity} Units
-                </p>
+                </div>
               </div>
             </div>
 
             {/* Form Fields Processing Node */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <div className="space-y-1">
-                <h3 className="text-xs font-bold text-[#17191b] uppercase tracking-wider m-0">Enquiry Details</h3>
-                <div className="h-[1px] w-full bg-gray-200/50" />
-              </div>
-
-              <form className="space-y-4" onSubmit={handleFormSubmission}>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-[#5e5e5c]">Full Name</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Enter contact name" type="text" />
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingTop: "16px", borderTop: "1px solid var(--app-border)" }}>
+              <form style={{ display: "flex", flexDirection: "column", gap: "16px" }} onSubmit={handleFormSubmission}>
+                
+                <div className="form-field-group">
+                  <label>Full Name</label>
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter contact name" type="text" style={{ width: "100%" }} />
                 </div>
                 
-                {/* 💡 Sized and Aligned Address & Pincode Split Row Row */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2 flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#5e5e5c]">Shipping Address</label>
-                    <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Enter delivery destination" type="text" />
+                <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                  <div className="form-field-group" style={{ flex: "2", marginBottom: 0 }}>
+                    <label>Shipping Address</label>
+                    <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter delivery destination" type="text" style={{ width: "100%" }} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#5e5e5c]">Pincode</label>
-                    <input value={pincode} onChange={(e) => setPincode(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="Zip/Pin" type="text" maxLength={10} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#5e5e5c]">Phone Number</label>
-                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="+91..." type="tel" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#5e5e5c]">Email Address</label>
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors" placeholder="work@brand.com" type="email" />
+                  <div className="form-field-group" style={{ flex: "1", marginBottom: 0 }}>
+                    <label>Pincode</label>
+                    <input value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="Zip" type="text" maxLength={10} style={{ width: "100%" }} />
                   </div>
                 </div>
 
-                {/* 💡 QUANTITY BLOCK WITH INTEGRATED MOQ IN-LINE ENGINE TRACKING PROTECTION */}
-                <div className="flex flex-col gap-1 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-bold text-[#17191b] uppercase tracking-wider">Batch Quantity Units</label>
-                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                  <div className="form-field-group" style={{ flex: "1", marginBottom: 0 }}>
+                    <label>Phone Number</label>
+                    <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91..." type="tel" style={{ width: "100%" }} />
+                  </div>
+                  <div className="form-field-group" style={{ flex: "1", marginBottom: 0 }}>
+                    <label>Email Address</label>
+                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="work@brand.com" type="email" style={{ width: "100%" }} />
+                  </div>
+                </div>
+
+                {/* 💡 QUANTITY BLOCK WITH PROTECTION */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "transparent", borderRadius: "var(--input-border-radius)", border: "1px solid var(--app-border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label style={{ margin: 0 }}>Batch Quantity Units</label>
+                    <span style={{ fontSize: "10px", fontWeight: "600", opacity: 0.6, backgroundColor: "rgba(var(--text-color) / 0.04)", padding: "2px 8px", borderRadius: "var(--input-border-radius)", border: "1px solid var(--app-border)" }}>
                       MOQ Required: {minimumOrderQuantity}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <button
                       type="button"
                       onClick={() => setQuantity(prev => Math.max(minimumOrderQuantity, prev - 10))}
-                      className="w-10 h-10 bg-[#f7f3ed] border border-gray-200 rounded-lg font-bold text-[#17191b] hover:bg-gray-200 flex items-center justify-center cursor-pointer select-none transition-colors border-none text-base"
+                      style={{ width: "36px", height: "36px", border: "1px solid var(--app-border)", background: "transparent", color: "currentColor", borderRadius: "var(--input-border-radius)", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", userSelect: "none" }}
                     >
                       -
                     </button>
@@ -294,49 +274,60 @@ export function EnquiryScreen({
                           setQuantity(minimumOrderQuantity);
                         }
                       }}
-                      className="flex-1 text-center bg-[#f7f3ed] border border-gray-200 rounded-lg h-10 text-sm font-bold text-[#17191b] outline-none focus:border-black transition-colors box-border"
+                      style={{ flex: 1, textAlign: "center", height: "36px", fontSize: "var(--text-sm)", fontWeight: "bold", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", background: "transparent", color: "currentColor" }}
                     />
                     <button
                       type="button"
                       onClick={() => setQuantity(prev => prev + 10)}
-                      className="w-10 h-10 bg-[#f7f3ed] border border-gray-200 rounded-lg font-bold text-[#17191b] hover:bg-gray-200 flex items-center justify-center cursor-pointer select-none transition-colors border-none text-base"
+                      style={{ width: "36px", height: "36px", border: "1px solid var(--app-border)", background: "transparent", color: "currentColor", borderRadius: "var(--input-border-radius)", fontWeight: "bold", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", userSelect: "none" }}
                     >
                       +
                     </button>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-[#5e5e5c]">Additional Requests</label>
-                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-[#f7f3ed] border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#17191b] outline-none focus:border-black transition-colors resize-none" placeholder="Specify required batch quantities or unique printing preferences..." rows={4} />
+                <div className="form-field-group">
+                  <label>Additional Requests</label>
+                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Specify unique printing preferences..." rows={3} style={{ width: "100%", resize: "none" }} />
                 </div>
+
+                {/* 🏁 INTEGRATED ACTION TRIGGERS (Header/Footer Eliminated) */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px", width: "100%" }}>
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary"
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                  >
+                    <PaperPlaneIcon style={{ width: "14px", height: "14px", color: "currentColor" }} />
+                    <span>{isSubmitting ? "Uploading Map Layer..." : "Submit Wholesale Enquiry"}</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={onBack}
+                    className="btn-primary"
+                    style={{ 
+                      width: "100%", 
+                      backgroundColor: "transparent", 
+                      color: "currentColor", 
+                      border: "1px solid var(--app-border)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    <ArrowLeftIcon style={{ width: "14px", height: "14px" }} />
+                    <span>Back to Studio Edit</span>
+                  </button>
+                </div>
+
               </form>
             </div>
           </div>
         </aside>
       </main>
-
-      {/* 🏁 Bottom Fixed Action Sheet Wrapper */}
-      <footer className="fixed bottom-0 left-0 w-full z-50 flex items-center justify-center p-4 bg-white border-t border-gray-100 shadow-md box-border">
-        <div className="max-w-[1280px] w-full flex items-center justify-between">
-          <div className="hidden sm:flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 tracking-wider">PROJECT REF</span>
-            <span className="text-xs font-bold text-[#17191b]">DL-2026-CERAMIC-B2B</span>
-          </div>
-          <div>
-            <button 
-              onClick={handleFormSubmission}
-              disabled={isSubmitting}
-              className="bg-[#17191b] text-white px-8 py-3.5 rounded-lg text-xs font-bold flex items-center gap-2 border-none cursor-pointer transition-all active:scale-98 shadow-sm hover:opacity-90 disabled:opacity-50"
-            >
-              <span>{isSubmitting ? "Uploading Map Layer..." : "Submit Wholesale Enquiry"}</span>
-              <PaperPlaneIcon style={{ width: "14px", height: "14px" }} />
-            </button>
-          </div>
-        </div>
-      </footer>
-      
-      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.02]" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/natural-paper.png')" }} />
     </div>
   );
 }
