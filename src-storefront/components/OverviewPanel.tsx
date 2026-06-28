@@ -8,7 +8,8 @@ import {
   PlusIcon, 
   TrashIcon, 
   UploadIcon,
-  MixerHorizontalIcon 
+  MixerHorizontalIcon,
+  BlendingModeIcon
 } from "@radix-ui/react-icons";
 import type { ArtworkObject, B2BProduct, DielineConfig } from "../types/customizer";
 import { ColorPicker } from "./color-picker";
@@ -70,42 +71,18 @@ export function OverviewPanel({
       className="client-3d-designer-extension" 
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
+      style={{ boxSizing: "border-box", paddingTop: "var(--container-gutter)" }}
     >
-      
-      {/* 🧭 TopAppBar Bar */}
-      <header className="designer-panel-card" style={{ paddingBlock: '12px', borderRadius: '0', borderLeft: 'none', borderRight: 'none', position: 'sticky', top: '0', zIndex: '50' }}>
-        <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button 
-              onClick={onBack}
-              className="hover:bg-gray-50"
-              style={{ padding: '8px', borderRadius: '9999px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <ArrowLeftIcon style={{ width: "20px", height: "20px", color: "currentColor" }} />
-            </button>
-            <h1 style={{ margin: '0' }}>Design Lab</h1>
-          </div>
-          <div>
-            <button 
-              onClick={onSave} // Moves onward to dynamic checkout sheet layout
-              className="btn-primary"
-            >
-              Preview and Submit Enquiry
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* 🎛️ Main Content Layout Canvas Grid */}
       <main className="main-framework-grid" style={{ marginBottom: '40px' }}>
         
         {/* 🎨 LEFT COLUMN PANEL: High Performance 2D UV Space Mapping Workspace */}
-        <section className="designer-panel-card" style={{ display: 'flex', flexDirection: 'column', flex: '1', minHeight: '550px' }}>
+        <section className="designer-panel-card" style={{ display: 'flex', flexDirection: 'column', flex: '1.2', minHeight: '550px' }}>
           <div style={{ paddingBottom: '16px', borderBottom: '1px solid var(--app-border)' }}>
             <h2 style={{ margin: '0' }}>Design Area</h2>
           </div>
 
-          {/* Core Interactive Rendering Mesh Wrapper */}
+          /* Core Interactive Rendering Mesh Wrapper */
           <div 
             style={{
               flexGrow: '1',
@@ -121,7 +98,7 @@ export function OverviewPanel({
           >
             {/* Instruction Overlay Background Layer */}
             {artworks.length === 0 && (
-              <div style={{ position: 'absolute', inset: '0', display: 'flex', flexDirection: 'column', itemsCenter: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: '0.4', userSelect: 'none', zIndex: '0', textAlign: 'center' }}>
+              <div style={{ position: 'absolute', inset: '0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: '0.4', userSelect: 'none', zIndex: '0', textAlign: 'center' }}>
                 <UploadIcon style={{ width: "36px", height: "36px", margin: "0 auto 8px auto" }} />
                 <p style={{ margin: '0', fontSize: 'var(--text-sm)' }}>Load artwork below to customize</p>
               </div>
@@ -261,7 +238,7 @@ export function OverviewPanel({
                     type="text" 
                     value={packageColor}
                     onChange={(e) => onColorChange(e.target.value)}
-                    style={{ border: 'none', padding: '0', width: '80px', fontSize: 'var(--text-xs)', fontWeight: 'bold', uppercase: 'true' }} 
+                    style={{ border: 'none', padding: '0', width: '80px', fontSize: 'var(--text-xs)', fontWeight: 'bold', textTransform: 'uppercase' }} 
                     placeholder="#FFFFFF"
                   />
                 </div>
@@ -285,6 +262,37 @@ export function OverviewPanel({
                   Gloss
                 </button>
               </div>
+            </div>
+
+            {/* 🏁 INTEGRATED ACTION NAVIGATION BLOCK (Header Removed) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px", borderTop: "1px solid var(--app-border)", paddingTop: "20px" }}>
+              <button 
+                onClick={onSave}
+                className="btn-primary"
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <BlendingModeIcon style={{ width: "16px", height: "16px" }} />
+                Preview and Submit Enquiry
+              </button>
+
+              <button 
+                type="button"
+                onClick={onBack}
+                className="btn-primary"
+                style={{ 
+                  width: "100%", 
+                  backgroundColor: "transparent", 
+                  color: "currentColor", 
+                  border: "1px solid var(--app-border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px"
+                }}
+              >
+                <ArrowLeftIcon style={{ width: "14px", height: "14px" }} />
+                <span>Back to Product Selection</span>
+              </button>
             </div>
 
           </div>
