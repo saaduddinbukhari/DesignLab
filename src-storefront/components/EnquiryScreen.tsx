@@ -300,7 +300,7 @@ export function EnquiryScreen({
                     style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                   >
                     <PaperPlaneIcon style={{ width: "14px", height: "14px", color: "currentColor" }} />
-                    <span>{isSubmitting ? "Uploading Map Layer..." : "Submit Wholesale Enquiry"}</span>
+                    <span>{isSubmitting ? "Submitting Your Enquiry" : "Submit Wholesale Enquiry"}</span>
                   </button>
 
                   <button 

@@ -1,4 +1,4 @@
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stage } from "@react-three/drei";
 import { ModelViewport } from "./ModelViewport";
@@ -60,45 +60,101 @@ export function OverviewPanel({
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   const selectedArt = artworks.find((a) => a.id === selectedArtworkId) ?? null;
-
-  // Sort descending for layer panel display (top layer first)
   const sortedArtworks = [...artworks].sort((a, b) => (b.zIndex ?? 1) - (a.zIndex ?? 1));
 
+  // ── Shared style helpers ───────────────────────────────────────────────────
+
+  /** Section label above sliders / control groups */
+  const sectionLabel: React.CSSProperties = {
+    display: "block",
+    font: "var(--button-font)",          // matches theme button text sizing
+    fontFamily: "var(--heading-font-family)",
+    letterSpacing: "var(--heading-letter-spacing)",
+    textTransform: "uppercase" as const,
+    color: "var(--app-text)",
+    opacity: 0.5,
+    marginBottom: "4px",
+  };
+
+  /** Ghost/outline button — matches the feel of native theme secondary buttons */
+  const ghostBtn = (active = false, danger = false): React.CSSProperties => ({
+    font: "var(--button-font)",
+    fontFamily: "var(--text-font-family)",
+    letterSpacing: "var(--button-letter-spacing)",
+    textTransform: "var(--button-text-transform)" as any,
+    padding: "5px 12px",
+    border: danger
+      ? "1px solid rgb(var(--error-text) / 0.35)"
+      : `1px solid ${active ? "rgb(var(--accent))" : "rgb(var(--border-color))"}`,
+    borderRadius: "var(--button-border-radius)",
+    background: active ? "rgb(var(--accent) / 0.08)" : "transparent",
+    color: danger ? "rgb(var(--error-text))" : active ? "rgb(var(--accent))" : "var(--app-text)",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    whiteSpace: "nowrap" as const,
+  });
+
+  /** Disabled-state ghost (Undo / Redo when stack is empty) */
+  const disabledGhostBtn: React.CSSProperties = {
+    ...ghostBtn(),
+    opacity: 0.35,
+    cursor: "not-allowed",
+  };
+
   return (
+    // font: inherit on root ensures all children pick up the theme body font
+    // unless explicitly overridden
     <div
       className="client-3d-designer-extension"
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
-      style={{ boxSizing: "border-box", paddingTop: "var(--container-gutter)" }}
+      style={{
+        boxSizing: "border-box",
+        paddingTop: "var(--container-gutter)",
+        fontFamily: "var(--text-font-family)",
+        fontWeight: "var(--text-font-weight)" as any,
+        fontStyle: "var(--text-font-style)" as any,
+        letterSpacing: "var(--text-letter-spacing)",
+        color: "var(--app-text)",
+      }}
     >
       <main className="main-framework-grid" style={{ marginBottom: "40px" }}>
 
-        {/* ── LEFT: 2D Canvas + controls ──────────────────────────────── */}
+        {/* ── LEFT: 2D Canvas ──────────────────────────────────────────── */}
         <section className="designer-panel-card" style={{ display: "flex", flexDirection: "column", flex: "1.2", minHeight: "550px" }}>
+
+          {/* Panel header */}
           <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--app-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ margin: "0" }}>Design Area</h2>
-            {/* Undo/Redo in header */}
+            <h2 style={{ margin: 0 }}>Design Area</h2>
             <div style={{ display: "flex", gap: "6px" }}>
               <button onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)"
-                style={{ padding: "5px 10px", fontSize: "12px", border: "1px solid var(--app-border)", borderRadius: "6px", background: "transparent", cursor: canUndo ? "pointer" : "not-allowed", opacity: canUndo ? 1 : 0.35 }}>
-                ↩ Undo
-              </button>
+                style={canUndo ? ghostBtn() : disabledGhostBtn}>↩ Undo</button>
               <button onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)"
-                style={{ padding: "5px 10px", fontSize: "12px", border: "1px solid var(--app-border)", borderRadius: "6px", background: "transparent", cursor: canRedo ? "pointer" : "not-allowed", opacity: canRedo ? 1 : 0.35 }}>
-                ↪ Redo
-              </button>
+                style={canRedo ? ghostBtn() : disabledGhostBtn}>↪ Redo</button>
             </div>
           </div>
 
-          <div style={{ flexGrow: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", backgroundColor: "transparent", backgroundImage: "linear-gradient(to right, var(--app-border) 1px, transparent 1px), linear-gradient(to bottom, var(--app-border) 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
+          {/* Canvas area */}
+          <div style={{
+            flexGrow: 1, position: "relative",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "24px",
+            backgroundImage: "linear-gradient(to right, var(--app-border) 1px, transparent 1px), linear-gradient(to bottom, var(--app-border) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}>
             {artworks.length === 0 && (
-              <div style={{ position: "absolute", inset: "0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none", opacity: "0.4", userSelect: "none", zIndex: "0", textAlign: "center" }}>
+              <div style={{
+                position: "absolute", inset: 0,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                pointerEvents: "none", opacity: 0.35, userSelect: "none", zIndex: 0, textAlign: "center",
+              }}>
                 <UploadIcon style={{ width: "36px", height: "36px", margin: "0 auto 8px auto" }} />
-                <p style={{ margin: "0", fontSize: "var(--text-sm)" }}>Load artwork below to customize</p>
+                <p style={{ margin: 0, fontSize: "var(--text-sm)" }}>Load artwork below to customize</p>
               </div>
             )}
-
-            <div className="canvas-3d-frame" onMouseDown={onMouseDown} style={{ position: "relative", zIndex: "10", border: "1px solid var(--app-border)" }}>
+            <div className="canvas-3d-frame" onMouseDown={onMouseDown} style={{ position: "relative", zIndex: 10, border: "1px solid var(--app-border)" }}>
               <ArtworkCanvas
                 artworks={artworks}
                 selectedArtworkId={selectedArtworkId}
@@ -114,64 +170,52 @@ export function OverviewPanel({
             </div>
           </div>
 
-          {/* ── Per-artwork inline controls (shown when artwork selected) ── */}
+          {/* ── Per-artwork controls (visible when artwork selected) ── */}
           {selectedArt && (
-            <div style={{ padding: "14px 0", borderTop: "1px solid var(--app-border)", borderBottom: "1px solid var(--app-border)", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{
+              padding: "16px 0",
+              borderTop: "1px solid var(--app-border)",
+              borderBottom: "1px solid var(--app-border)",
+              display: "flex", flexDirection: "column", gap: "14px",
+            }}>
 
-              {/* Row 1: scale + opacity */}
-              <div style={{ display: "flex", gap: "16px" }}>
+              {/* Scale + Opacity */}
+              <div style={{ display: "flex", gap: "24px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "10px", fontWeight: "700", color: "#999", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-                    Scale · {Math.round(currentScale * 100)}%
-                  </label>
+                  <label style={sectionLabel}>Scale · {Math.round(currentScale * 100)}%</label>
                   <input type="range" min="0.2" max="2.5" step="0.05" value={currentScale}
                     onChange={(e) => onScaleChange(parseFloat(e.target.value))}
-                    style={{ width: "100%", accentColor: "#8b5cf6" }} />
+                    style={{ width: "100%", accentColor: "rgb(var(--accent))" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "10px", fontWeight: "700", color: "#999", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-                    Opacity · {Math.round((selectedArt.opacity ?? 1) * 100)}%
-                  </label>
+                  <label style={sectionLabel}>Opacity · {Math.round((selectedArt.opacity ?? 1) * 100)}%</label>
                   <input type="range" min="0" max="1" step="0.01" value={selectedArt.opacity ?? 1}
                     onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
-                    style={{ width: "100%", accentColor: "#8b5cf6" }} />
+                    style={{ width: "100%", accentColor: "rgb(var(--accent))" }} />
                 </div>
               </div>
 
-              {/* Row 2: rotation slider */}
+              {/* Rotation */}
               <div>
-                <label style={{ fontSize: "10px", fontWeight: "700", color: "#999", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-                  Rotation · {Math.round(selectedArt.rotation ?? 0)}°
-                </label>
+                <label style={sectionLabel}>Rotation · {Math.round(selectedArt.rotation ?? 0)}°</label>
                 <input type="range" min="-180" max="180" step="1" value={selectedArt.rotation ?? 0}
                   onChange={(e) => {
-                    window.dispatchEvent(new CustomEvent("artwork:rotate", { detail: { id: selectedArt.id, rotation: parseFloat(e.target.value) } }));
+                    window.dispatchEvent(new CustomEvent("artwork:rotate", {
+                      detail: { id: selectedArt.id, rotation: parseFloat(e.target.value) },
+                    }));
                   }}
-                  style={{ width: "100%", accentColor: "#8b5cf6" }} />
+                  style={{ width: "100%", accentColor: "rgb(var(--accent))" }} />
               </div>
 
-              {/* Row 3: flip + layer order + remove */}
+              {/* Flip + Layer + Remove */}
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                <button onClick={() => onFlip("x")}
-                  style={{ padding: "5px 10px", fontSize: "11px", fontWeight: "600", border: `1px solid ${selectedArt.flipX ? "#8b5cf6" : "var(--app-border)"}`, borderRadius: "6px", background: selectedArt.flipX ? "#f5f3ff" : "transparent", color: selectedArt.flipX ? "#8b5cf6" : "currentColor", cursor: "pointer" }}>
-                  ↔ Flip H
-                </button>
-                <button onClick={() => onFlip("y")}
-                  style={{ padding: "5px 10px", fontSize: "11px", fontWeight: "600", border: `1px solid ${selectedArt.flipY ? "#8b5cf6" : "var(--app-border)"}`, borderRadius: "6px", background: selectedArt.flipY ? "#f5f3ff" : "transparent", color: selectedArt.flipY ? "#8b5cf6" : "currentColor", cursor: "pointer" }}>
-                  ↕ Flip V
-                </button>
-
+                <button onClick={() => onFlip("x")} style={ghostBtn(selectedArt.flipX)}>↔ Flip H</button>
+                <button onClick={() => onFlip("y")} style={ghostBtn(selectedArt.flipY)}>↕ Flip V</button>
                 <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
-                  <button onClick={() => onLayerMove(selectedArt.id, "up")} title="Move layer up (])" style={{ padding: "5px 8px", fontSize: "11px", border: "1px solid var(--app-border)", borderRadius: "6px", background: "transparent", cursor: "pointer" }}>
-                    ▲ Forward
-                  </button>
-                  <button onClick={() => onLayerMove(selectedArt.id, "down")} title="Move layer down ([)" style={{ padding: "5px 8px", fontSize: "11px", border: "1px solid var(--app-border)", borderRadius: "6px", background: "transparent", cursor: "pointer" }}>
-                    ▼ Back
-                  </button>
+                  <button onClick={() => onLayerMove(selectedArt.id, "up")} title="Move forward (])" style={ghostBtn()}>▲ Forward</button>
+                  <button onClick={() => onLayerMove(selectedArt.id, "down")} title="Move back ([)" style={ghostBtn()}>▼ Back</button>
                 </div>
-
-                <button onClick={() => onRemoveArtwork(selectedArt.id)}
-                  style={{ padding: "5px 10px", fontSize: "11px", fontWeight: "600", border: "1px solid #fee2e2", borderRadius: "6px", background: "transparent", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                <button onClick={() => onRemoveArtwork(selectedArt.id)} style={ghostBtn(false, true)}>
                   <TrashIcon style={{ width: "12px", height: "12px" }} />
                   Remove
                 </button>
@@ -179,7 +223,7 @@ export function OverviewPanel({
             </div>
           )}
 
-          {/* Layers strip + upload */}
+          {/* Upload + layer thumbnails */}
           <div style={{ paddingTop: "14px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -192,19 +236,21 @@ export function OverviewPanel({
             <input ref={fileInputRef} type="file" accept="image/png, image/jpeg, image/svg+xml"
               onChange={onAddArtwork} style={{ display: "none" }} />
 
-            {/* Mini layer thumbnails */}
             {sortedArtworks.length > 0 && (
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
                 {sortedArtworks.map((art) => (
                   <div
                     key={art.id}
                     onClick={() => onSelectArtwork(art.id)}
-                    title={`Select artwork (${Math.round(art.rotation ?? 0)}° · ${Math.round((art.opacity ?? 1) * 100)}%)`}
+                    title={`${Math.round(art.rotation ?? 0)}° · ${Math.round((art.opacity ?? 1) * 100)}%`}
                     style={{
-                      width: "36px", height: "36px", borderRadius: "6px", overflow: "hidden",
-                      border: `2px solid ${selectedArtworkId === art.id ? "#8b5cf6" : "transparent"}`,
+                      width: "36px", height: "36px",
+                      borderRadius: "var(--input-border-radius)",
+                      overflow: "hidden",
+                      border: `2px solid ${selectedArtworkId === art.id ? "rgb(var(--accent))" : "transparent"}`,
+                      outline: isOutOfBounds(art) ? "2px dashed rgb(var(--error-text))" : "none",
                       cursor: "pointer", flexShrink: 0,
-                      outline: isOutOfBounds(art) ? "2px dashed #ef4444" : "none",
+                      boxShadow: "var(--shadow-sm)",
                     }}
                   >
                     <img src={art.dataUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: art.opacity }} />
@@ -215,15 +261,19 @@ export function OverviewPanel({
           </div>
         </section>
 
-        {/* ── RIGHT: 3D Preview + color/finish controls ───────────────── */}
+        {/* ── RIGHT: 3D Preview ─────────────────────────────────────────── */}
         <section className="designer-panel-card" style={{ display: "flex", flexDirection: "column", flex: "1", minHeight: "550px" }}>
           <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--app-border)" }}>
-            <h2 style={{ margin: "0" }}>Live 3D Preview</h2>
+            <h2 style={{ margin: 0 }}>Live 3D Preview</h2>
           </div>
 
-          <div className="canvas-3d-frame" style={{ flexGrow: "1" }}>
+          <div className="canvas-3d-frame" style={{ flexGrow: 1 }}>
             {modelUrl ? (
-              <Suspense fallback={<div style={{ position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)" }}>Assembling 3D customizer...</div>}>
+              <Suspense fallback={
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)", opacity: 0.5 }}>
+                  Assembling 3D preview...
+                </div>
+              }>
                 <Canvas shadows camera={{ position: [0, 1.2, 3.2], fov: 45 }} gl={{ preserveDrawingBuffer: true }}>
                   <ambientLight intensity={0.2} />
                   <pointLight position={[10, 10, 10]} intensity={0.2} castShadow />
@@ -234,54 +284,100 @@ export function OverviewPanel({
                 </Canvas>
               </Suspense>
             ) : (
-              <div style={{ position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)" }}>
-                ⚠️ No matching mesh connected for preview
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)", opacity: 0.5 }}>
+                ⚠️ No mesh connected for preview
               </div>
             )}
           </div>
 
-          <div style={{ paddingTop: "20px", display: "flex", flexDirection: "column", gap: "20px", boxSizing: "border-box" }}>
-            {/* Color */}
-            <div className="form-field-group" style={{ marginBottom: "0" }}>
+          <div style={{ paddingTop: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
+
+            {/* Base Glaze Color */}
+            <div className="form-field-group" style={{ marginBottom: 0 }}>
               <label>Base Glaze Color</label>
               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
                 <div style={{ display: "flex", gap: "10px" }}>
                   {["#F4F2EE", "#E2E2E5", "#2C2E30", "#E6E2DC"].map((c) => (
                     <button key={c} onClick={() => onColorChange(c)}
-                      style={{ width: "32px", height: "32px", borderRadius: "50%", border: packageColor === c ? "2px solid var(--app-btn-bg)" : "1px solid var(--app-border)", backgroundColor: c, cursor: "pointer" }} />
+                      style={{
+                        width: "32px", height: "32px", borderRadius: "50%",
+                        border: packageColor === c ? "2px solid rgb(var(--accent))" : "1px solid var(--app-border)",
+                        backgroundColor: c, cursor: "pointer",
+                        boxShadow: packageColor === c ? "var(--shadow)" : "none",
+                        transform: packageColor === c ? "scale(1.1)" : "scale(1)",
+                        transition: "transform 0.15s ease",
+                      }} />
                   ))}
                 </div>
+
                 <div style={{ position: "relative" }}>
-                  <button onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-                    style={{ padding: "6px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--input-border-radius)", border: "1px solid var(--app-border)", background: "transparent", cursor: "pointer" }}
-                    title="Pick Custom Color">
+                  <button
+                    onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                    style={{
+                      padding: "6px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: "var(--input-border-radius)",
+                      border: "1px solid var(--app-border)",
+                      background: "transparent", cursor: "pointer",
+                    }}
+                    title="Pick custom color"
+                  >
                     <MixerHorizontalIcon style={{ width: "16px", height: "16px" }} />
                   </button>
                   {isColorPickerOpen && (
                     <>
-                      <div style={{ position: "fixed", inset: "0", zIndex: "20" }} onClick={() => setIsColorPickerOpen(false)} />
-                      <div style={{ position: "absolute", bottom: "100%", marginBottom: "12px", left: "0", zIndex: "30" }}>
+                      <div style={{ position: "fixed", inset: 0, zIndex: 20 }} onClick={() => setIsColorPickerOpen(false)} />
+                      <div style={{ position: "absolute", bottom: "100%", marginBottom: "12px", left: 0, zIndex: 30 }}>
                         <ColorPicker value={packageColor} onChange={onColorChange} />
                       </div>
                     </>
                   )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", background: "transparent", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", padding: "6px 12px" }}>
-                  <span style={{ fontSize: "var(--text-xs)", marginRight: "8px", opacity: "0.5", userSelect: "none" }}>HEX</span>
-                  <input type="text" value={packageColor} onChange={(e) => onColorChange(e.target.value)}
-                    style={{ border: "none", padding: "0", width: "80px", fontSize: "var(--text-xs)", fontWeight: "bold", textTransform: "uppercase" }} />
+
+                <div style={{
+                  display: "flex", alignItems: "center",
+                  border: "1px solid var(--app-border)",
+                  borderRadius: "var(--input-border-radius)",
+                  padding: "6px 12px",
+                }}>
+                  <span style={{ fontSize: "var(--text-xs)", marginRight: "8px", opacity: 0.45, userSelect: "none" }}>HEX</span>
+                  <input
+                    type="text" value={packageColor}
+                    onChange={(e) => onColorChange(e.target.value)}
+                    style={{
+                      border: "none", padding: 0, width: "80px", background: "transparent",
+                      font: "inherit", fontSize: "var(--text-xs)", fontWeight: "bold",
+                      textTransform: "uppercase", color: "var(--app-text)",
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Finish */}
-            <div className="form-field-group" style={{ marginBottom: "0" }}>
+            {/* Finish Texture */}
+            <div className="form-field-group" style={{ marginBottom: 0 }}>
               <label>Finish Texture</label>
-              <div style={{ display: "flex", padding: "4px", background: "transparent", border: "1px solid var(--app-border)", borderRadius: "var(--input-border-radius)", width: "fit-content" }}>
+              <div style={{
+                display: "flex", padding: "4px",
+                border: "1px solid var(--app-border)",
+                borderRadius: "var(--input-border-radius)",
+                width: "fit-content",
+              }}>
                 {(["matte", "gloss"] as const).map((f) => (
                   <button key={f} onClick={() => setActiveFinish(f)}
-                    style={{ padding: "6px 16px", borderRadius: "var(--input-border-radius)", border: "none", cursor: "pointer", fontSize: "var(--text-xs)", fontWeight: "semibold", background: activeFinish === f ? "var(--app-btn-bg)" : "transparent", color: activeFinish === f ? "var(--app-btn-text)" : "currentColor", textTransform: "capitalize" }}>
-                    {f}
+                    style={{
+                      padding: "6px 16px",
+                      borderRadius: "var(--input-border-radius)",
+                      border: "none", cursor: "pointer",
+                      font: "var(--button-font)",
+                      fontFamily: "var(--text-font-family)",
+                      letterSpacing: "var(--button-letter-spacing)",
+                      textTransform: "var(--button-text-transform)" as any,
+                      background: activeFinish === f ? "var(--app-btn-bg)" : "transparent",
+                      color: activeFinish === f ? "var(--app-btn-text)" : "var(--app-text)",
+                      transition: "background 0.15s ease",
+                    }}>
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
                 ))}
               </div>
@@ -293,7 +389,7 @@ export function OverviewPanel({
                 <BlendingModeIcon style={{ width: "16px", height: "16px" }} />
                 Preview and Submit Enquiry
               </button>
-              <button type="button" onClick={onBack} className="btn-primary"
+              <button onClick={onBack} className="btn-primary"
                 style={{ width: "100%", backgroundColor: "transparent", color: "currentColor", border: "1px solid var(--app-border)", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                 <ArrowLeftIcon style={{ width: "14px", height: "14px" }} />
                 Back to Product Selection
