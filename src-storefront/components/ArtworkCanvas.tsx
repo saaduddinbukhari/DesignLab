@@ -52,27 +52,37 @@ export function ArtworkCanvas({
     { handle: "w",  x: 0,      y: dh / 2, cursor: "w-resize"  },
   ];
 
+  // Shared font props to pass down
+  const baseFont: React.CSSProperties = {
+    fontFamily: "var(--text-font-family)",
+    fontWeight: "var(--text-font-weight)" as any,
+    fontStyle: "var(--text-font-style)" as any,
+    letterSpacing: "var(--text-letter-spacing)",
+    color: "var(--app-text)",
+  };
+
   return (
-    // Font inheritance root — all canvas labels/kbd use theme fonts from here
+    // Outer wrapper: column layout so label sits above the canvas, legend below
+    // Background is intentionally transparent — OverviewPanel owns the bg colour
     <div
       style={{
-        flex: 1,
-        backgroundColor: "rgba(var(--text-color) / 0.03)",
+        ...baseFont,
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        position: "relative",
-        overflow: "hidden",
-        padding: "40px",
-        fontFamily: "var(--text-font-family)",
-        fontWeight: "var(--text-font-weight)" as any,
-        fontStyle: "var(--text-font-style)" as any,
-        letterSpacing: "var(--text-letter-spacing)",
-        color: "var(--app-text)",
+        padding: "20px 32px 16px 32px",
+        gap: "10px",
       }}
     >
-      {/* Label */}
-      <div style={{ position: "absolute", top: "20px", left: "20px", zIndex: 5 }}>
+      {/* ── Top label row: sits above the print zone, never overlaps ── */}
+      <div style={{
+        width: `${displaySize}px`,
+        display: "flex",
+        flexDirection: "column",
+        gap: "2px",
+        flexShrink: 0,
+      }}>
         <div style={{
           fontFamily: "var(--heading-font-family)",
           fontWeight: "var(--heading-font-weight)" as any,
@@ -85,49 +95,15 @@ export function ArtworkCanvas({
           2D Artwork Canvas
         </div>
         <div style={{
-          fontFamily: "var(--text-font-family)",
+          ...baseFont,
           fontSize: "var(--text-xs)",
-          color: "var(--app-text)",
-          opacity: 0.5,
-          marginTop: "2px",
+          opacity: 0.45,
         }}>
           Drag to move · Handles to resize · ⟳ to rotate · Ctrl+Z to undo
         </div>
       </div>
 
-      {/* Keyboard shortcut legend */}
-      <div style={{
-        position: "absolute", bottom: "20px", left: "20px", zIndex: 5,
-        display: "flex", gap: "10px", flexWrap: "wrap",
-      }}>
-        {[
-          { key: "Ctrl+Z", label: "Undo" },
-          { key: "Ctrl+Y", label: "Redo" },
-          { key: "Del",    label: "Remove" },
-          { key: "[ ]",   label: "Layer order" },
-        ].map(({ key, label }) => (
-          <div key={key} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <kbd style={{
-              fontFamily: "var(--text-font-family)",
-              fontSize: "9px",
-              background: "rgb(var(--background-without-opacity))",
-              border: "1px solid rgb(var(--border-color))",
-              borderRadius: "var(--input-border-radius)",
-              padding: "1px 5px",
-              boxShadow: "var(--shadow-sm)",
-              color: "var(--app-text)",
-            }}>{key}</kbd>
-            <span style={{
-              fontFamily: "var(--text-font-family)",
-              fontSize: "9px",
-              color: "var(--app-text)",
-              opacity: 0.5,
-            }}>{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Print zone */}
+      {/* ── Print zone ─────────────────────────────────────────────── */}
       <div
         onMouseDown={onMouseDown}
         style={{
@@ -138,22 +114,26 @@ export function ArtworkCanvas({
           boxShadow: "var(--shadow-md)",
           cursor: isDragging ? "grabbing" : "default",
           borderRadius: "var(--input-border-radius)",
-          border: "2px solid rgb(var(--accent) / 0.4)",
+          border: "1.5px dashed rgb(var(--border-color))",
           overflow: "visible",
+          flexShrink: 0,
         }}
       >
+        {/* "Print zone" chip — bottom-right corner, inside the zone */}
         <div style={{
           position: "absolute",
-          top: "-22px", left: 0,
-          fontFamily: "var(--text-font-family)",
-          fontSize: "var(--text-xs)",
-          color: "var(--app-text)",
-          opacity: 0.4,
+          bottom: "6px",
+          right: "8px",
+          ...baseFont,
+          fontSize: "9px",
+          opacity: 0.3,
           fontWeight: "600",
           textTransform: "uppercase",
-          letterSpacing: "var(--text-letter-spacing)",
+          letterSpacing: "0.08em",
+          pointerEvents: "none",
+          userSelect: "none",
         }}>
-          Print zone: {dieline.printW}×{dieline.printH}px
+          {dieline.printW}×{dieline.printH}px
         </div>
 
         {artworks.map((art) => {
@@ -243,7 +223,7 @@ export function ArtworkCanvas({
                     title="Rotate"
                   >
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                      stroke="rgb(var(--accent-foreground, 255 255 255))"
+                      stroke="#ffffff"
                       strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21.5 2v6h-6" />
                       <path d="M21.34 15.57a10 10 0 1 1-.57-8.38" />
@@ -258,7 +238,7 @@ export function ArtworkCanvas({
                     width: "1px",
                     height: `${ROTATE_OFFSET}px`,
                     backgroundColor: "rgb(var(--accent))",
-                    opacity: 0.4,
+                    opacity: 0.5,
                     pointerEvents: "none",
                   }} />
                 </>
@@ -266,6 +246,39 @@ export function ArtworkCanvas({
             </div>
           );
         })}
+      </div>
+
+      {/* ── Keyboard shortcut legend: sits below the print zone ─────── */}
+      <div style={{
+        width: `${displaySize}px`,
+        display: "flex",
+        gap: "12px",
+        flexWrap: "wrap",
+        flexShrink: 0,
+      }}>
+        {[
+          { key: "Ctrl+Z", label: "Undo" },
+          { key: "Ctrl+Y", label: "Redo" },
+          { key: "Del",    label: "Remove" },
+          { key: "[ ]",   label: "Layer order" },
+        ].map(({ key, label }) => (
+          <div key={key} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <kbd style={{
+              ...baseFont,
+              fontSize: "9px",
+              background: "rgb(var(--background-without-opacity))",
+              border: "1px solid rgb(var(--border-color))",
+              borderRadius: "var(--input-border-radius)",
+              padding: "1px 5px",
+              boxShadow: "var(--shadow-sm)",
+            }}>{key}</kbd>
+            <span style={{
+              ...baseFont,
+              fontSize: "9px",
+              opacity: 0.45,
+            }}>{label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

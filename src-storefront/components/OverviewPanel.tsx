@@ -58,6 +58,7 @@ export function OverviewPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeFinish, setActiveFinish] = useState<"matte" | "gloss">("matte");
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [canvasZoom, setCanvasZoom] = useState(1.0); // 0.5 – 2.0
 
   const selectedArt = artworks.find((a) => a.id === selectedArtworkId) ?? null;
   const sortedArtworks = [...artworks].sort((a, b) => (b.zIndex ?? 1) - (a.zIndex ?? 1));
@@ -138,23 +139,72 @@ export function OverviewPanel({
 
           {/* Canvas area */}
           <div style={{
-            flexGrow: 1, position: "relative",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "24px",
-            backgroundImage: "linear-gradient(to right, var(--app-border) 1px, transparent 1px), linear-gradient(to bottom, var(--app-border) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
+            flexGrow: 1,
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            backgroundColor: "rgb(var(--background-without-opacity))",
           }}>
             {artworks.length === 0 && (
               <div style={{
                 position: "absolute", inset: 0,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                pointerEvents: "none", opacity: 0.35, userSelect: "none", zIndex: 0, textAlign: "center",
+                pointerEvents: "none", opacity: 0.25, userSelect: "none", zIndex: 0, textAlign: "center",
               }}>
                 <UploadIcon style={{ width: "36px", height: "36px", margin: "0 auto 8px auto" }} />
                 <p style={{ margin: 0, fontSize: "var(--text-sm)" }}>Load artwork below to customize</p>
               </div>
             )}
-            <div className="canvas-3d-frame" onMouseDown={onMouseDown} style={{ position: "relative", zIndex: 10, border: "1px solid var(--app-border)" }}>
+
+            {/* Zoom controls — top-right corner of canvas viewport */}
+            <div style={{
+              position: "absolute", top: "12px", right: "12px", zIndex: 20,
+              display: "flex", alignItems: "center", gap: "6px",
+              backgroundColor: "rgb(var(--background-without-opacity))",
+              border: "1px solid var(--app-border)",
+              borderRadius: "var(--input-border-radius)",
+              padding: "4px 8px",
+              boxShadow: "var(--shadow-sm)",
+            }}>
+              <button
+                onClick={() => setCanvasZoom(z => Math.max(0.5, parseFloat((z - 0.1).toFixed(1))))}
+                style={{
+                  font: "var(--button-font)", fontFamily: "var(--text-font-family)",
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--app-text)", fontSize: "16px", lineHeight: 1,
+                  padding: "0 2px", opacity: canvasZoom <= 0.5 ? 0.3 : 0.7,
+                }}
+              >−</button>
+              <span
+                onClick={() => setCanvasZoom(1.0)}
+                title="Reset zoom"
+                style={{
+                  fontFamily: "var(--text-font-family)",
+                  fontSize: "var(--text-xs)", fontWeight: "600",
+                  color: "var(--app-text)", opacity: 0.6,
+                  minWidth: "36px", textAlign: "center",
+                  cursor: "pointer", userSelect: "none",
+                }}
+              >{Math.round(canvasZoom * 100)}%</span>
+              <button
+                onClick={() => setCanvasZoom(z => Math.min(2.0, parseFloat((z + 0.1).toFixed(1))))}
+                style={{
+                  font: "var(--button-font)", fontFamily: "var(--text-font-family)",
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--app-text)", fontSize: "16px", lineHeight: 1,
+                  padding: "0 2px", opacity: canvasZoom >= 2.0 ? 0.3 : 0.7,
+                }}
+              >+</button>
+            </div>
+
+            {/* Scaled canvas wrapper */}
+            <div style={{
+              transform: `scale(${canvasZoom})`,
+              transformOrigin: "center center",
+              transition: "transform 0.15s ease",
+            }}>
               <ArtworkCanvas
                 artworks={artworks}
                 selectedArtworkId={selectedArtworkId}
